@@ -640,6 +640,8 @@ Te está diciendo que reinicará todos estos archivos, le das al tabulador para 
 
 Ahora vamos a reinicar desde la consola de aws
 
+![](/img/7.png)
+
 o desde la consola 
 
 > [!IMPORTANT]
@@ -653,33 +655,479 @@ ubuntu@ip-172-31-39-104:~$ sudo reboot
 ubuntu@ip-172-31-39-104:~$ Connection to 54.224.151.83 closed by remote host.
 Connection to 54.224.151.83 closed.
 ➜  Despliegue_AWS ssh -i web15.pem ubuntu@54.224.151.83
-Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
+    Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
 
- * Documentation:  https://help.ubuntu.com
- * Management:     https://landscape.canonical.com
- * Support:        https://ubuntu.com/advantage
+    * Documentation:  https://help.ubuntu.com
+    * Management:     https://landscape.canonical.com
+    * Support:        https://ubuntu.com/advantage
 
-  System information as of Wed Feb  7 13:03:41 UTC 2024
+    System information as of Wed Feb  7 13:03:41 UTC 2024
 
-  System load:  0.0               Processes:             98
-  Usage of /:   30.3% of 7.57GB   Users logged in:       0
-  Memory usage: 24%               IPv4 address for eth0: 172.31.39.104
-  Swap usage:   0%
+    System load:  0.0               Processes:             98
+    Usage of /:   30.3% of 7.57GB   Users logged in:       0
+    Memory usage: 24%               IPv4 address for eth0: 172.31.39.104
+    Swap usage:   0%
 
- * Ubuntu Pro delivers the most comprehensive open source security and
-   compliance features.
+    * Ubuntu Pro delivers the most comprehensive open source security and
+    compliance features.
 
-   https://ubuntu.com/aws/pro
+    https://ubuntu.com/aws/pro
 
-Expanded Security Maintenance for Applications is not enabled.
+    Expanded Security Maintenance for Applications is not enabled.
 
-25 updates can be applied immediately.
-To see these additional updates run: apt list --upgradable
+    25 updates can be applied immediately.
+    To see these additional updates run: apt list --upgradable
 
-Enable ESM Apps to receive additional future security updates.
-See https://ubuntu.com/esm or run: sudo pro status
+    Enable ESM Apps to receive additional future security updates.
+    See https://ubuntu.com/esm or run: sudo pro status
 
 
-Last login: Wed Feb  7 13:03:41 2024 from 77.243.86.7
+    Last login: Wed Feb  7 13:03:41 2024 from 77.243.86.7
 ubuntu@ip-172-31-39-104:~$ 
 ```
+
+Hemos de configurar el cortafuegos
+
+![](/img/8.png)
+
+---
+
+![](/img/9.png)
+
+---
+
+Incluimos el puerto de acceso HTTP con dns 0.0.0.0. para que pueda acceder todo el mundo, si quieres puedes decirle que solo puede acceder una direccion particular.
+![](/img/10.png)
+
+
+---
+
+Ahora si te vas al browser y navegas a la ip que te ha dado antes
+
+```sh
+http://54.224.151.83/
+```
+
+verás que entras en `Welcome to nginx!`
+
+```json
+Welcome to nginx!  
+Si ve esta página, el servidor web nginx se instaló correctamente y funciona. 
+Se requiere configuración adicional.
+```
+
+
+```sh
+# paro el servidor nginx
+sudo systemctl stop nginx
+
+# arranco del nuevo
+sudo systemctl start nginx
+
+# puedes ver los procesos abiertos
+ubuntu@ip-172-31-39-104:~$ ps aux | grep nginx
+
+root         424  0.0  0.2  55224  2284 ?        Ss   13:21   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data     428  0.0  0.6  55856  6124 ?        S    13:21   0:00 nginx: worker process
+ubuntu       796  0.0  0.2   7008  2304 pts/0    S+   13:51   0:00 grep --color=auto nginx
+ubuntu@ip-172-31-39-104:~$ 
+
+```
+
+```sh
+# recargar sin que deje de funcionar el servidor
+sudo systemctl reload nginx
+
+# permite comprobar si lo que has escrito de configuracion no la has cagado
+sudo nginx-t
+```
+
+**configuracino**
+
+* El fichero de configuracion está en `etc/nginx/nginx.conf`
+* En `etc/nginx/nginx.conf` podemos incluir configuracion personalizada que sobreescriba parámetros por defecto (si no queremos tocar `etc/nginx/nginx.conf`)
+
+```sh
+# leamos el fichero de configuracion
+ubuntu@ip-172-31-39-104:~$ less /etc/nginx/nginx.conf
+
+    user www-data;
+    worker_processes auto;
+    pid /run/nginx.pid;
+    include /etc/nginx/modules-enabled/*.conf;
+
+    events {
+            worker_connections 768;
+            # multi_accept on;
+    }
+
+    http {
+
+            ##
+            # Basic Settings
+            ##
+
+            sendfile on;
+            tcp_nopush on;
+            types_hash_max_size 2048;
+            # server_tokens off;
+
+            # server_names_hash_bucket_size 64;
+            # server_name_in_redirect off;
+
+            include /etc/nginx/mime.types;
+            default_type application/octet-stream;
+
+            ##
+            # SSL Settings
+            ##
+
+            ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+            ssl_prefer_server_ciphers on;
+
+            ##
+            # Logging Settings
+            ##
+
+            access_log /var/log/nginx/access.log;
+            error_log /var/log/nginx/error.log;
+
+            ##
+            # Gzip Settings
+            ##
+
+            gzip on;
+
+            # gzip_vary on;
+            # gzip_proxied any;
+            # gzip_comp_level 6;
+            # gzip_buffers 16 8k;
+            # gzip_http_version 1.1;
+            # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+            ##
+            # Virtual Host Configs
+            ##
+
+            include /etc/nginx/conf.d/*.conf;
+            include /etc/nginx/sites-enabled/*;
+    }
+
+```
+
+**Configuración de nuestros sitios web**
+
+* Con una sola instalación, podemos dar servicio a varios dominios o subdominios.
+* En `/etc/nginx/site-available/` podemos incluir congifuracion de otros sitios que queramos configurar.
+* Una vez configurados, debemos hacer un **acceso directo** (ln -s) el archivo a `/etc/nginx/sites-enabled/` para que nginx los sirva
+
+
+```sh
+# veamos todos los archivos de configuracion de nginx
+ubuntu@ip-172-31-39-104:~$ cd /etc/nginx/
+ubuntu@ip-172-31-39-104:/etc/nginx$ ls -l
+
+total 64
+drwxr-xr-x 2 root root 4096 May 30  2023 conf.d
+-rw-r--r-- 1 root root 1125 May 30  2023 fastcgi.conf
+-rw-r--r-- 1 root root 1055 May 30  2023 fastcgi_params
+-rw-r--r-- 1 root root 2837 May 30  2023 koi-utf
+-rw-r--r-- 1 root root 2223 May 30  2023 koi-win
+-rw-r--r-- 1 root root 3957 May 30  2023 mime.types
+drwxr-xr-x 2 root root 4096 May 30  2023 modules-available
+drwxr-xr-x 2 root root 4096 Feb  7 13:07 modules-enabled
+-rw-r--r-- 1 root root 1447 May 30  2023 nginx.conf
+-rw-r--r-- 1 root root  180 May 30  2023 proxy_params
+-rw-r--r-- 1 root root  636 May 30  2023 scgi_params
+drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-available
+drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-enabled
+drwxr-xr-x 2 root root 4096 Feb  7 13:07 snippets
+-rw-r--r-- 1 root root  664 May 30  2023 uwsgi_params
+-rw-r--r-- 1 root root 3071 May 30  2023 win-utf
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ cd sites-enabled/
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ ls -l
+total 0
+lrwxrwxrwx 1 root root 34 Feb  7 13:07 default -> /etc/nginx/sites-available/default
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ 
+```
+
+esto es un link `lrwxrwxrwx 1 root root 34 Feb  7 13:07 default -> /etc/nginx/sites-available/default` directo al archivo `sites-available`
+
+```sh
+# miramos que hay dentro
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ less default
+
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        # SSL configuration
+        #
+        # listen 443 ssl default_server;
+        # listen [::]:443 ssl default_server;
+        #
+        # Note: You should disable gzip for SSL traffic.
+        # See: https://bugs.debian.org/773332
+        #
+        # Read up on ssl_ciphers to ensure a secure configuration.
+        # See: https://bugs.debian.org/765782
+        #
+        # Self signed certs generated by the ssl-cert package
+        # Don't use them in a production server!
+        #
+        # include snippets/snakeoil.conf;
+
+        root /var/www/html; # <----- FIJATE EL DIRECTORI A LA RAIZ
+
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name _;
+
+        location / {
+                # First attempt to serve request as file, then
+                # as directory, then fall back to displaying a 404.
+                try_files $uri $uri/ =404;
+        }
+
+        # pass PHP scripts to FastCGI server
+        #
+        #location ~ \.php$ {
+        #       include snippets/fastcgi-php.conf;
+        #
+        #       # With php-fpm (or other unix sockets):
+        #       fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+        #       # With php-cgi (or other tcp sockets):
+        #       fastcgi_pass 127.0.0.1:9000;
+        #}
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #       deny all;
+        #}
+}
+
+
+# Virtual Host configuration for example.com
+#
+# You can move that to a different file under sites-available/ and symlink that
+# to sites-enabled/ to enable it.
+#
+#server {
+#       listen 80;
+#       listen [::]:80;
+#
+#       server_name example.com;
+#
+#       root /var/www/example.com;
+#       index index.html;
+#
+#       location / {
+#               try_files $uri $uri/ =404;
+#       }
+#}
+(END)
+```
+
+Fíjate lo que te ha dicho
+
+```sh
+        root /var/www/html; # <----- FIJATE EL DIRECTORI A LA RAIZ
+
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+```
+
+
+La página de inicio que te muestra 
+
+```json
+Welcome to nginx!  
+Si ve esta página, el servidor web nginx se instaló correctamente y funciona. 
+Se requiere configuración adicional.
+```
+
+Te la muetra porque aquí `/var/www/html` debe haber algo
+
+```sh
+# miremos que hay dentro 
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ cd /var/www/html
+ubuntu@ip-172-31-39-104:/var/www/html$ ls 
+index.nginx-debian.html
+ubuntu@ip-172-31-39-104:/var/www/html$ cat index.nginx-debian.html 
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Welcome to nginx!</title>
+    <style>
+        body {
+            width: 35em;
+            margin: 0 auto;
+            font-family: Tahoma, Verdana, Arial, sans-serif;
+        }
+    </style>
+    </head>
+    <body>
+    <h1>Welcome to nginx!</h1>
+    <p>If you see this page, the nginx web server is successfully installed and
+    working. Further configuration is required.</p>
+
+    <p>For online documentation and support please refer to
+    <a href="http://nginx.org/">nginx.org</a>.<br/>
+    Commercial support is available at
+    <a href="http://nginx.com/">nginx.com</a>.</p>
+
+    <p><em>Thank you for using nginx.</em></p>
+    </body>
+    </html>
+```
+ Es esta página
+
+ 
+```json
+Welcome to nginx!  
+Si ve esta página, el servidor web nginx se instaló correctamente y funciona. 
+Se requiere configuración adicional.
+```
+
+Como en las instrucciones del fichero nginx te decía que si no sabías que fichero ver, busca : `index index.html | index.htm | index.nginx-debian.html;`
+
+por esto está cargando este archivo 
+
+```sh
+ubuntu@ip-172-31-39-104:/var/www/html$ ls -l
+total 4
+-rw-r--r-- 1 root root 612 Feb  7 13:07 index.nginx-debian.html
+```
+
+Vamos a ver el arhivo
+
+```sh
+ubuntu@ip-172-31-39-104:/var/www/html$ ls -l
+    total 4
+    -rw-r--r-- 1 root root 612 Feb  7 13:07 index.nginx-debian.html
+ubuntu@ip-172-31-39-104:/var/www/html$ ls -l /var/www/
+    total 4
+    drwxr-xr-x 2 root root 4096 Feb  7 13:07 html
+
+# abrimos el archivo
+ubuntu@ip-172-31-39-104:/var/www/html$ sudo nano index.html
+```
+
+El archivo está vacío
+
+pero lo escribimos un **hola mundo** y guardamos
+
+![](/img/12.png)
+
+Vamos a https://startbootstrap.com/
+copiamos una plantilla
+
+Abro nuevo consola en mi terminal local
+
+```sh
+➜  ~ cd /Users/alex/Desktop/KEEPKODING/Servidores_Despliegue_Aplicaciones/template
+➜  template ls -l
+total 296
+-rw-rw-r--@ 1 alex  staff   2407 Mar 25  2023 401.html
+-rw-rw-r--@ 1 alex  staff   2407 Mar 25  2023 404.html
+-rw-rw-r--@ 1 alex  staff   2338 Mar 25  2023 500.html
+drwxrwxr-x@ 4 alex  staff    128 Mar 25  2023 assets
+-rw-rw-r--@ 1 alex  staff  11617 Mar 25  2023 charts.html
+drwxrwxr-x@ 3 alex  staff     96 Mar 25  2023 css
+-rw-rw-r--@ 1 alex  staff  41881 Mar 25  2023 index.html
+drwxrwxr-x@ 4 alex  staff    128 Mar 25  2023 js
+-rw-rw-r--@ 1 alex  staff   9559 Mar 25  2023 layout-sidenav-light.html
+-rw-rw-r--@ 1 alex  staff   9791 Mar 25  2023 layout-static.html
+-rw-rw-r--@ 1 alex  staff   4075 Mar 25  2023 login.html
+-rw-rw-r--@ 1 alex  staff   3508 Mar 25  2023 password.html
+-rw-rw-r--@ 1 alex  staff   5600 Mar 25  2023 register.html
+-rw-rw-r--@ 1 alex  staff  38311 Mar 25  2023 tables.html
+```
+
+**¿cual es el origen?**
+
+
+* ¿cual es el origen? mi carpeta entera --> `scp template`
+* ¿cuál es el destimo? el servidor --> `ubuntu@54.224.151.83`
+* ¿donde quieres que te deje la carpeta? --> `/home/ubuntu`
+* qué contraseña tienes para acceder a ubuntu? --> tu archivo : `-i web15.pen`
+* quiero subir de forma recursvo para todo lo que hay dentro : `-r`
+
+```sh
+# para cargar
+$ scp -r -i ../Despliegue_AWS/web15.pem ../template ubuntu@54.224.151.83:/home/ubuntu
+
+
+# para descargar sería al revés
+```
+
+Ahora si te vas a la termina del aws y buscas la carpeta
+
+```sh
+# estas en la carpeta /var/www/html con cd te vas a home
+ubuntu@ip-172-31-39-104:/var/www/html$ cd
+ubuntu@ip-172-31-39-104:~$ ls -l
+
+    total 4
+    -rw-rw-r-- 1 ubuntu ubuntu    0 Feb  6 14:33 hello
+    drwxrwxr-x 5 ubuntu ubuntu 4096 Feb  7 15:31 template
+
+ubuntu@ip-172-31-39-104:~$ ls -l template/
+    total 160
+    -rw-rw-r-- 1 ubuntu ubuntu  2407 Feb  7 15:31 401.html
+    -rw-rw-r-- 1 ubuntu ubuntu  2407 Feb  7 15:31 404.html
+    -rw-rw-r-- 1 ubuntu ubuntu  2338 Feb  7 15:31 500.html
+    drwxrwxr-x 4 ubuntu ubuntu  4096 Feb  7 15:31 assets
+    -rw-rw-r-- 1 ubuntu ubuntu 11617 Feb  7 15:31 charts.html
+    drwxrwxr-x 2 ubuntu ubuntu  4096 Feb  7 15:31 css
+    -rw-rw-r-- 1 ubuntu ubuntu 41881 Feb  7 15:31 index.html
+    drwxrwxr-x 2 ubuntu ubuntu  4096 Feb  7 15:31 js
+    -rw-rw-r-- 1 ubuntu ubuntu  9559 Feb  7 15:31 layout-sidenav-light.html
+    -rw-rw-r-- 1 ubuntu ubuntu  9791 Feb  7 15:31 layout-static.html
+    -rw-rw-r-- 1 ubuntu ubuntu  4075 Feb  7 15:31 login.html
+    -rw-rw-r-- 1 ubuntu ubuntu  3508 Feb  7 15:31 password.html
+    -rw-rw-r-- 1 ubuntu ubuntu  5600 Feb  7 15:31 register.html
+    -rw-rw-r-- 1 ubuntu ubuntu 38311 Feb  7 15:31 tables.html
+```
+
+Ahora toca moverlo a la capeta **/var/www/html** que en esta carpeta solo puede acceder sudo
+
+* copia de manera recursiva y forzada todos los archivos de template y los pegas en /var/...
+```sh
+# traslado archivos
+ubuntu@ip-172-31-39-104:~$ sudo cp -r template/* /var/www/html
+
+# compruebo
+ubuntu@ip-172-31-39-104:~$ ls -l /var/www/html
+
+    total 164
+    -rw-r--r-- 1 root root  2407 Feb  7 15:39 401.html
+    -rw-r--r-- 1 root root  2407 Feb  7 15:39 404.html
+    -rw-r--r-- 1 root root  2338 Feb  7 15:39 500.html
+    drwxr-xr-x 4 root root  4096 Feb  7 15:39 assets
+    -rw-r--r-- 1 root root 11617 Feb  7 15:39 charts.html
+    drwxr-xr-x 2 root root  4096 Feb  7 15:39 css
+    -rw-r--r-- 1 root root 41881 Feb  7 15:39 index.html
+    -rw-r--r-- 1 root root   612 Feb  7 13:07 index.nginx-debian.html
+    drwxr-xr-x 2 root root  4096 Feb  7 15:39 js
+    -rw-r--r-- 1 root root  9559 Feb  7 15:39 layout-sidenav-light.html
+    -rw-r--r-- 1 root root  9791 Feb  7 15:39 layout-static.html
+    -rw-r--r-- 1 root root  4075 Feb  7 15:39 login.html
+    -rw-r--r-- 1 root root  3508 Feb  7 15:39 password.html
+    -rw-r--r-- 1 root root  5600 Feb  7 15:39 register.html
+    -rw-r--r-- 1 root root 38311 Feb  7 15:39 tables.html
+```
+
+
+Ahora vete al browser y recarga la página `https://54.224.151.83` la verás así `https://startbootstrap.com/template/sb-admin`
+
+
+
+
