@@ -5,6 +5,11 @@ Iniciamos con el video **1.mp4**
 
 ---
 
+**trucos**
+
+* `Ctrl+r` : es un buscador de comandos antiguos, has de decirle las palabras que quieres buscar
+* `sudo !!` : cuando te olvidas poner sudo en el comando, esto te permite ejecutar ell mismo comando que antes con sudo delante
+
 ![](img/1.png)
 
 ```sh
@@ -230,3 +235,320 @@ https://www.tecmint.com/35-practical-examples-of-linux-find-command/
    - Otros usuarios fuera del grupo
 
 ![](img/2.png)
+
+![](img/4.png)
+
+**Modificar permisos de archivos y carpeta**
+
+* **chmod `<target>`±rwx `<filename>`**
+    - `<target>` = a / u / g / o
+    - a = all / u = user/owner / g = group / o = other
+* **chmod u+wrx backup** : Da (+) todos (rwx) los permisos para el propietario (u)
+* **chmod a+x backup** : Da (+) permisos de ejecución (x) para todos (a)
+* **chmod g+rx backup**: Da (+) permisos de lectura y ejecución (rx) a los usuarios del grupo (g)
+* **chmod o-rw backup**: Quita (-) permisos de lectura y escritura (rw) a los otros usuarios (o)
+
+* **adduser <username>** : Crear un usuario y un grupo con el mismo nombre del usuario y mete al usuario en dicho grupo. Esto lo registra en /etc/passwd y /etc/group
+
+
+**Ejecutando como administrador**
+
+* **sudo `<command>`** : Ejecuta lo que viene seguido de sudo como administrador. El usuario debe tener permiso de sudoer.
+* **deluser `<username>`** : Elimina un usuario del sistema. Lo elimina de /etc/passwd
+* **addgroup `<groupname>`** : Crea un grupo añadiéndolo a /etc/group
+* **delgroup `<groupname>`** : Elimina un grupo de /etc/group No elimina los usuarios de ese grupo
+* **adduser `<username> <groupname>`** : Añade el usuario al grupo en /etc/group
+* **adduser `<username>` sudo** : Añade el usuario al grupo sudo en /etc/group Si eres sudo, tienes permisos para todo, da igual los permisos del archivo
+* **chown `<newowner> <filename>`** : El archivo <filename> pasa a pertenecer a <newowner>
+* **chown -R `<newowner> <foldername>** : Cambiar el propietario de <foldername> y todos sus archivos y subdirectorios. Es un cambio recursivo (-R)
+* **chgrp `<newgroup> <filename>`** : El archivo <filename> pasa a pertenecer a <newgroup>
+* **chgrp -R `<newgroup> <foldername>`** : Cambiar el grupo de <foldername> y todos sus archivos y subdirectorios. Es un cambio recursivo (-R)
+* **chown `<user>:<group> <filename>`** : Cambiar el propietario y grupo a la vez
+* **passwd `<username>`** : Cambiar contraseña de un usuario
+
+
+**Apagar y reiniciar** En necesario que seas administrador o sudoer
+
+* **shutdown** :  Apaga el servidor
+* **reboot** : Reiniciar el servidor
+
+
+**Instalando y desinstalando software**
+
+Gestor de paquetes `apt-get`
+
+En las distribuciones basadas en Debian (como Ubuntu), se puede instalar y desinstalar software a través del gestor de paquetes:`apt-get`
+Este gestor se descarga paquetes ya compilados desde Internet para tu distribución y los instala en el sistema (descargando también otras dependencias si hiciera falta).
+
+* **apt-get install `<package>`** : Instala el paquete `<package>` en el sistema
+* **apt-get purge `<package>`** : Desinstala el paquete `<package>` del sistema
+* **apt-get update** : Actualiza los repositorios de software para buscar actualizaciones
+* **apt-get upgrade** : Instala todas las actualizaciones de paquetes
+
+
+**Gestión de procesos**
+
+
+* **top** [top: el CTRL+ALT+SUPR de Linux] : Muestra en tiempo real información de los los procesos ordenados por consumo de CPU (de mayor a menor). Para salir, pulsar la letra Q (de quit)
+* **ps aux** : Muestra todos los procesos en ejecución con mucha información (no sólo los que más CPU consumen, com hace top)
+* **ps aux | more** : Para poder ir viéndolos poco a poco
+* **ps aux | grep `<command>`** : Para buscar un processo <command>
+* **kill `<pid>`** : Mata el proceso número <pid>. Sólo vale para procesos nuestros.
+* **sudo kill `<pid>`** : Para poder matar procesos de otros usuarios
+
+
+**Gestionando el espacio en disco**
+
+* **df** : Muestra el espacio libre de las particiones en bytes
+* **df -h** : Muestra el espacio libre legible para humanos (h)
+* **du `<folder>`** : Muestra lo que ocupa cada archivo dentro de `<folder>`
+* **du -ch `<folder>`** : Más rápido (c) y entendible para humanos (h)
+
+
+**Seguridad**
+
+Consejos de seguridad
+
+* Cambiar las contraseñas como mucho trimestralmente
+* Cambia los puertos por defecto de los servicios que puedas
+* Oculta los números de versión de los servicios
+* Protege con SSL y autenticación HTTP los accesos de
+administración de tus plataformas
+* No uses /admin /adm /cms /backend /backoffice (sé original)
+* Usa un firewall
+* Haz copias de seguridad diarias...y haz ensayos de recuperación
+* Mantén actualizado tu software
+* Elimina los humanos: son la mayor brecha de seguridad
+
+
+`fail2ban`
+
+* Es un servicio que se encarga de proteger el sistema sobre ataques a diferentes servicios mediante monitorización de los logs (entre otros aspectos).
+* Cuando detecta una amenaza, reacciona baneando la IP del posible atacante.
+* A veces se pasa de protector y nos deja sin acceso a nosotros
+* Es muy sencillo de configurar
+
+Instalación `fail2ban`
+
+```sh
+sudo apt-get install fail2ban
+```
+
+* **`/etc/fail2ban/jail.conf`** : Fichero de configuración
+* **`/etc/fail2ban/filter.d/`** : Configuración de filtros y acciones
+
+
+**Comprimir y descomprimir**
+
+Hay varias opciones, pero lo más habitual es usar tar + gzip:
+
+* tar es un comando que empaqueta (junta varias carpetas en un archivo) pero no comprime
+* gzip es un comando que comprime archivos (similar a zip)
+* Se utiliza tar con la opción -z para comprimir en gzip
+* También podemos usar zip, pero en Linux se usa mas .tar.gz
+
+* **tar -czvf `<foo>`.tar.gz `<folder>`** : Comprime el directrorio <folder> en un archivo <foo>.tar.gz
+* **tar -xzvf `<foo>`.tar.gz** : Descomprime <foo>.tar.gz en el directorio local
+* **zip -r `<foo>`.zip `<folder>`** : Comprime el directrorio <folder> en un archivo <foo>.zip ACHTUNG: zip no suele venir instalado en Linux.
+* **unzip <foo>.zip** : Descomprime el archivo <foo>.zip en el directorio actual. ACHTUNG: unzip no suele venir instalado en Linux.
+
+
+**Redirección** 
+
+
+En Bash podemos redirigir la salida de los comandos para que, en lugar de mostrarnos el resultado por pantalla, nos lo almacenen en un fichero. También podemos redirigir la entrada, para que un comando en lugar de esperar un dato por pantalla (o teclado) directamente lo tome de un fichero.
+
+
+* **echo “hi” > hello.txt** : Guarda la salida del comando “echo” en el fichero “hello.txt”. Si el fichero existe, machaca su contenido.
+Si no existe el fichero, lo crea.
+* **echo “hi” >> hello.txt** : Igual que el anterior, pero: Si el fichero existe, añade el contenido al final. Si no existe el fichero, lo crea.
+* **patch index.js < v1.patch** : Pasa el contenido de “hello.txt” como argumento al comando hello.
+
+
+**Pipes**
+
+Los pipes nos permiten pasar la información de un comando a otro como si fueran filtros. La salida de un comando se transforma en la entrada de otro comando.
+
+* `cat quixote.txt | grep Rocinante | wc -l` : cat saca todo el contenido del fichero “quixote.txt” y se lo pasa como entrada al comando “grep Rocinante” que filtrará las líneas en las que aparece la palabra “Rocinante” y éste le pasa dicho resultado al comando “more” que nos permite ir leyendo poco a poco los resultados.
+
+
+> [!NOTE]
+> Repositorio de comandos:  http://www.commandlinefu.com/
+
+
+
+## Scripting
+
+* La bash permite almacenar comandos en un fichero de texto y ejecutarlos como si fuera programas.
+* Proporciona incluso instrucciones de control de flujo y bucles
+* Los ficheros deben tener permisos de ejecución para poder ser
+tratados como programas.
+* En la primera línea, se ha de indicar cuál es el intérprete que se
+debe utilizar.
+* Podemos utilizar otros lenguajes de scripting (python, php, perl...)
+
+```sh
+#!/bin/bash
+# This is a comment
+echo “My command is called $0\n” echo “The first argument is $1\n” for item in ‘$(ls)’
+do
+echo “- $item\n” done
+```
+
+```sh
+#!/bin/bash para scripts bash o shellscript 
+#!/bin/python para scripts python 
+#!/bin/php para scripts php
+```
+
+**Variables implícitas** 
+
+* **$@** lista de parámetros recibida por el comando
+* **$0** nombre del propio comando/archivo
+* **$1** primer parámetro
+* **$2** segundo parámetro
+...
+* **$n** n-ésimo parámetro
+* **`$?`** resultado de la salida del último comando (0 es OK, !=0 es KO) $$ número de proceso que se ejecuta
+* **$#** número de parámetros recibidos por el comando
+
+
+```sh
+# Definición de variables
+name=“hello” 
+counter=0
+```
+
+```sh
+# Uso de variables
+echo “Hello $name” 
+echo “Hello ${name}” 
+echo “$counter times” 
+echo “${counter} times”
+```
+
+```sh
+# Usando la salida de un comando
+files=$(ls) # Ejecuta el comando ls y guarda su salida en “files” 
+echo $files
+```
+
+
+```sh
+# Condicionales
+
+if <condition> then
+<stuff>
+else
+<otherstuff>
+fi
+```
+
+
+```sh
+# Condiciones de las condicionales
+
+if cp $source $target # si se ejecuta bien cp
+if test -f $source # si $source es un fichero
+if [ -f “$source” ] # si $source es un fichero
+if [ -d “$source” ] # si $source es un directorio if [ -e “$source” ] # si $source existe
+if $source = $target # si $source es igual a $target
+if $source != $target # si $source es distinto a $target
+```
+
+```sh
+# Condiciones de las condicionales: numéricas
+
+if $numA -eq $numB # $numA == $numB 
+if $numA -ne $numB # $numA != $numB 
+if $numA -ge $numB # $numA >= $numB 
+if $numA -gt $numB # $numA > $numB 
+if $numA -le $numB # $numA <= $numB 
+if $numA -lt $numB # $numA < $numB
+```
+
+```sh
+# Case
+
+case <variable> in <value1>)
+<stuff>
+;;
+<value2> | <value3>)
+<otherstuff>
+;; *)
+;; esac
+```
+
+```sh
+# Bucle for
+
+for file in $(ls) 
+do
+    <stuff>
+done
+```
+
+**Salida**
+
+Cuando nuestro programa acaba bien, debe devolver `exit 0`. Si algo va mal, deberemos devolver un número distinto de cero (lo suyo es diferenciar los tipos de error con números).
+
+```sh
+# Funciones
+
+function <name> ()
+{
+    <commands>
+    return <int>
+}
+```
+
+
+**Ejecutar en background**
+
+* **`<command>` &** : Ejecutar en background sin deconexión
+
+ACHTUNG: No vale para ejecutar en segundo plano y desconectarnos. El sistema puede matar el proceso pasado un tiempo.
+
+* **nohup `<command>` &** : Ejecutar en background con desconexión. La posible salida que pueda sacar el comando, la almacenará en un archivo llamado nohup.out
+
+
+**Programando tareas automáticas**
+
+
+El cron
+
+* Todos los sistemas Linux incluyen un programador de tareas: cron
+* Nos permite programar comandos que se ejecuten automáticamente
+* Básicamente, se almacena en un fichero la información de programación y el comando a ejecutar
+* Como máximo podemos ejecutar repetitivamente hasta una vez por minuto
+
+
+**Programando tareas para mi usuario**
+
+* **crontab -e** : 
+
+![](img/5.png)
+
+* **sudo nano /etc/crontab** : Programando tareas de sistema
+
+
+![](img/6.png)
+
+
+**Ejemplo crontab -e**
+
+* `30 10 * * 1 /usr/bin/who >> /home/who.txt` : Todos los lunes a las 10:30
+* `0,30 * * * 1 /usr/bin/who >> /home/who.txt`: Todos los lunes a en punto o a y media de todas las horas
+* `*/15 * * * * /usr/bin/who >> /home/who.txt` : Cada 15 minutos
+* `30 21 * * 6 /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
+
+https://es.wikipedia.org/wiki/Cron_(Unix)
+
+**Ejemplo /etc/crontab** 
+
+
+* `30 10 * * 1 larry /usr/bin/who >> /home/who.txt` : Todos los lunes a las 10:30
+* `0,30 * * * 1 steve /usr/bin/who >> /home/who.txt` : Todos los lunes a en punto o a y media de todas las horas
+* `*/15 * * * * sergei /usr/bin/who >> /home/who.txt` : Cada 15 minutos
+* `30 21 * * 6 root /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
+
