@@ -552,3 +552,134 @@ https://es.wikipedia.org/wiki/Cron_(Unix)
 * `*/15 * * * * sergei /usr/bin/who >> /home/who.txt` : Cada 15 minutos
 * `30 21 * * 6 root /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
 
+# NGINX
+
+El todo en uno : servidor web, proxy invers y balanceador de carga.
+
+NGINX es un software de servidor web de alto rendimiento, conocido por su estabilidad, rico conjunto de características, configuración simple, y bajo consumo de recursos. Originalmente diseñado para servir contenido estático de manera eficiente, NGINX se ha expandido para ofrecer una solución de red completa, incluyendo capacidades de proxy inverso, proxy de correo electrónico (IMAP/POP3), y un balanceador de carga.
+
+**Servidor Web**
+
+Como servidor web, NGINX es conocido por su habilidad para manejar un gran número de conexiones simultáneas con un bajo uso de memoria y CPU. Esto lo hace ideal para sitios web con mucho tráfico y para servir archivos estáticos (como imágenes, CSS, y JavaScript), donde supera a otros servidores web como Apache en términos de eficiencia y velocidad.
+
+**Proxy Inverso**
+
+En su función de proxy inverso, NGINX actúa como intermediario para solicitudes de clientes, reenviándolas a servidores internos. Esto puede ser usado para distribuir la carga entre varios servidores, mejorar la seguridad ocultando la verdadera ubicación de los servidores internos, manejar el cifrado SSL/TLS, y servir contenido dinámico y estático de manera eficiente.
+
+**Balanceador de Carga**
+
+NGINX puede distribuir el tráfico entrante entre varios servidores traseros basándose en diferentes métodos de balanceo de carga, como round-robin, menos conexiones, y hash de IP. Esto mejora la disponibilidad y la redundancia de las aplicaciones web, permitiendo que los sitios web manejen volúmenes de tráfico más altos y proporcionen tiempos de respuesta más rápidos.
+
+**Características Adicionales**
+
+Alto rendimiento y manejo eficiente de conexiones: NGINX utiliza un modelo de eventos asincrónicos para manejar múltiples conexiones, lo que le permite manejar miles de conexiones simultáneas en una máquina con hardware modesto.
+
+Configuración flexible: La configuración de NGINX es conocida por su potencia y flexibilidad, permitiendo a los usuarios ajustar el servidor para optimizar el rendimiento y la seguridad.
+
+* Soporte para WebSocket: NGINX soporta el protocolo WebSocket, permitiendo aplicaciones web en tiempo real.
+
+* Cifrado SSL/TLS: NGINX puede manejar la terminación SSL/TLS, descriptografía de solicitudes antes de pasarlas a los servidores de aplicación internos, y cifrando las respuestas antes de enviarlas a los clientes, mejorando así la seguridad.
+
+* Caching: NGINX puede almacenar en caché contenido dinámico y estático, reduciendo la carga en los servidores de aplicación y mejorando el tiempo de respuesta para los usuarios finales.
+
+Compresión: Reduce el tamaño de los datos enviados a los clientes, mejorando los tiempos de carga de las páginas.
+
+**Uso**
+
+NGINX se utiliza en una variedad de entornos, desde sitios web personales hasta algunas de las mayores propiedades de internet. Empresas como Netflix, Airbnb, y Dropbox usan NGINX para servir contenido de manera eficiente a millones de usuarios diariamente. Su capacidad para manejar un gran número de conexiones simultáneas con un uso eficiente de recursos lo hace ideal para sitios web de alto tráfico, aplicaciones web en tiempo real, y como parte de la infraestructura de microservicios.
+
+```sh
+➜  ~ sudo apt-get install nginx
+```
+
+
+```sh
+# Conectando con AWS
+
+➜  DESPLIEGUE cd Despliegue_AWS 
+➜  Despliegue_AWS ssh -i web15.pem ubuntu@54.224.151.83
+    Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1017-aws x86_64)
+
+    * Documentation:  https://help.ubuntu.com
+    * Management:     https://landscape.canonical.com
+    * Support:        https://ubuntu.com/advantage
+
+    System information as of Wed Feb  7 13:03:41 UTC 2024
+
+    System load:  0.0               Processes:             98
+    Usage of /:   30.3% of 7.57GB   Users logged in:       0
+    Memory usage: 24%               IPv4 address for eth0: 172.31.39.104
+    Swap usage:   0%
+
+    * Ubuntu Pro delivers the most comprehensive open source security and
+    compliance features.
+
+    https://ubuntu.com/aws/pro
+
+    Expanded Security Maintenance for Applications is not enabled.
+
+    25 updates can be applied immediately.
+    To see these additional updates run: apt list --upgradable
+
+    Enable ESM Apps to receive additional future security updates.
+    See https://ubuntu.com/esm or run: sudo pro status
+
+
+    *** System restart required ***
+    Last login: Tue Feb  6 14:30:09 2024 from 77.243.86.2
+    To run a command as administrator (user "root"), use "sudo <command>".
+    See "man sudo_root" for details.
+
+ubuntu@ip-172-31-39-104:~$ 
+
+# instalando nginx
+ubuntu@ip-172-31-39-104:~$ sudo apt-get install nginx
+```
+
+Te está diciendo que reinicará todos estos archivos, le das al tabulador para irte al ok y le das.
+
+Ahora vamos a reinicar desde la consola de aws
+
+o desde la consola 
+
+> [!IMPORTANT]
+> Acuerdate que antes de hacer esto en produccion deberías hacer una foto, `Snapshot` desde aws
+
+```sh
+# reinicio
+ubuntu@ip-172-31-39-104:~$ sudo reboot
+
+# vuelvo a conectar con el kernel nuevo
+ubuntu@ip-172-31-39-104:~$ Connection to 54.224.151.83 closed by remote host.
+Connection to 54.224.151.83 closed.
+➜  Despliegue_AWS ssh -i web15.pem ubuntu@54.224.151.83
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Wed Feb  7 13:03:41 UTC 2024
+
+  System load:  0.0               Processes:             98
+  Usage of /:   30.3% of 7.57GB   Users logged in:       0
+  Memory usage: 24%               IPv4 address for eth0: 172.31.39.104
+  Swap usage:   0%
+
+ * Ubuntu Pro delivers the most comprehensive open source security and
+   compliance features.
+
+   https://ubuntu.com/aws/pro
+
+Expanded Security Maintenance for Applications is not enabled.
+
+25 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+Last login: Wed Feb  7 13:03:41 2024 from 77.243.86.7
+ubuntu@ip-172-31-39-104:~$ 
+```
