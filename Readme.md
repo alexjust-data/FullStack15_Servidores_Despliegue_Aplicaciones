@@ -1592,6 +1592,187 @@ ubuntu@ip-172-31-39-104:/etc/nginx$ cat /etc/nginx/sites-enabled/react
         }
 ```
 
+importante, has de recargar el servidor
+
+```sh
+# recargo nginx
+ubuntu@ip-172-31-39-104:/etc/nginx$ sudo systemctl reload nginx
+
+# compruebo que haya cargado bien
+ubuntu@ip-172-31-39-104:/etc/nginx$ sudo systemctl status nginx.service
+
+    ● nginx.service - A high performance web server and a reverse proxy server
+        Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
+        Active: active (running) since Wed 2024-02-07 13:21:46 UTC; 2 days ago
+        Docs: man:nginx(8)
+        Process: 357 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+        Process: 414 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+        Process: 4366 ExecReload=/usr/sbin/nginx -g daemon on; master_process on; -s reload (code=exited, status=0/SUCCESS)
+    Main PID: 424 (nginx)
+        Tasks: 2 (limit: 1121)
+        Memory: 12.1M
+            CPU: 199ms
+        CGroup: /system.slice/nginx.service
+                ├─ 424 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+                └─4367 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+
+    Feb 07 13:21:45 ip-172-31-39-104 systemd[1]: Starting A high performance web server and a reverse proxy server...
+    Feb 07 13:21:46 ip-172-31-39-104 systemd[1]: Started A high performance web server and a reverse proxy server.
+    Feb 09 13:54:48 ip-172-31-39-104 systemd[1]: Reloading A high performance web server and a reverse proxy server...
+    Feb 09 13:54:48 ip-172-31-39-104 systemd[1]: Reloaded A high performance web server and a reverse proxy server.
+```
+
+Ahora si pones las dns y luego la ip en el browser debería funcionar,  
+si no funciona puedes mirar en los archivos logs
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ cd /var/log
+ubuntu@ip-172-31-39-104:/var/log$ ls -l
+        total 1692
+        -rw-r--r--  1 root      root              7820 Feb  7 06:35 alternatives.log
+        drwx------  3 root      root              4096 Feb  6 12:31 amazon
+        drwxr-xr-x  2 root      root              4096 Feb  7 13:07 apt
+        -rw-r-----  1 syslog    adm             219265 Feb  9 13:55 auth.log
+        -rw-rw----  1 root      utmp            218496 Feb  9 13:12 btmp
+        drwxr-x---  2 _chrony   _chrony           4096 Feb  6 12:31 chrony
+        -rw-r-----  1 root      adm               7619 Feb  7 13:21 cloud-init-output.log
+        -rw-r-----  1 syslog    adm             258592 Feb  7 13:21 cloud-init.log
+        drwxr-xr-x  2 root      root              4096 Aug  2  2023 dist-upgrade
+        -rw-r-----  1 root      adm              41516 Feb  7 13:21 dmesg
+        -rw-r-----  1 root      adm              41434 Feb  6 12:31 dmesg.0
+        -rw-r--r--  1 root      root             68743 Feb  7 13:07 dpkg.log
+        drwxr-sr-x+ 3 root      systemd-journal   4096 Feb  6 12:31 journal
+        -rw-r-----  1 syslog    adm             114114 Feb  7 13:21 kern.log
+        drwxr-xr-x  2 landscape landscape         4096 Feb  6 14:30 landscape
+        -rw-rw-r--  1 root      utmp            292292 Feb  9 12:49 lastlog
+        drwxr-xr-x  2 root      adm               4096 Feb  9 00:00 nginx
+        drwx------  2 root      root              4096 Feb  6 12:31 private
+        -rw-r-----  1 syslog    adm             645547 Feb  9 13:55 syslog
+        -rw-r--r--  1 root      root             18375 Feb  9 01:41 ubuntu-advantage.log
+        drwxr-x---  2 root      adm               4096 Feb  6 22:38 unattended-upgrades
+        -rw-rw-r--  1 root      utmp              9984 Feb  9 12:49 wtmp
+ubuntu@ip-172-31-39-104:/var/log$ cd nginx/
+ubuntu@ip-172-31-39-104:/var/log/nginx$ ls -l
+        total 104
+        -rw-r----- 1 www-data adm 21807 Feb  9 13:58 access.log
+        -rw-r----- 1 www-data adm 65394 Feb  8 23:44 access.log.1
+        -rw-r----- 1 www-data adm   705 Feb  9 13:58 error.log
+        -rw-r----- 1 www-data adm    78 Feb  7 13:07 error.log.1
+ubuntu@ip-172-31-39-104:/var/log/nginx$ tail error.log
+    2024/02/09 13:51:38 [emerg] 4346#4346: unexpected ";" in /etc/nginx/sites-enabled/react:3
+    2024/02/09 13:54:48 [notice] 4366#4366: signal process started
+    2024/02/09 13:58:03 [crit] 4367#4367: *440 stat() "/home/ubuntu/react-todo/cart.json" failed (13: Permission denied), client: 85.87.66.72, server: ec2-54-224-151-83.compute-1.amazonaws.com, request: "GET /cart.json HTTP/1.1", host: "ec2-54-224-151-83.compute-1.amazonaws.com"
+    2024/02/09 13:58:03 [crit] 4367#4367: *440 stat() "/home/ubuntu/react-todo/cart.json" failed (13: Permission denied), client: 85.87.66.72, server: ec2-54-224-151-83.compute-1.amazonaws.com, request: "GET /cart.json HTTP/1.1", host: "ec2-54-224-151-83.compute-1.amazonaws.com"
+    ubuntu@ip-172-31-39-104:/var/log/nginx$ 
+
+```
+
+**(13: Permission denied)**
+
+¿pero como saber que eres tu y no es un bot? Imaginate que es el servidor del log de google que hay millones por segundo?
+
+te vas a "cuál es mi ip" cuando la tienes 85.87.66.72
+
+```sh
+ubuntu@ip-172-31-39-104:/var/log/nginx$ tail -f error.log | grep 85.87.66.72
+2024/02/09 13:58:03 [crit] 4367#4367: *440 stat() "/home/ubuntu/react-todo/cart.json" failed (13: Permission denied), client: 85.87.66.72, server: ec2-54-224-151-83.compute-1.amazonaws.com, request: "GET /cart.json HTTP/1.1", host: "ec2-54-224-151-83.compute-1.amazonaws.com"
+2024/02/09 13:58:03 [crit] 4367#4367: *440 stat() "/home/ubuntu/react-todo/cart.json" failed (13: Permission denied), client: 85.87.66.72, server: ec2-54-224-151-83.compute-1.amazonaws.com, request: "GET /cart.json HTTP/1.1", host: "ec2-54-224-151-83.compute-1.amazonaws.com"
+2024/02/09 14:07:47 [crit] 4367#4367: *444 stat() "/home/ubuntu/react-todo/cart.json" failed (13: Permission denied), client: 85.87.66.72, server: ec2-54-224-151-83.compute-1.amazonaws.com, request: "GET /cart.json HTTP/1.1", host: "ec2-54-224-151-83.compute-1.amazonaws.com"
+```
+
+fíjate que ahora ha filtrado solo las de mi ip, que son las mismas que antes porque no tenemos entradas desde el exterior a la app, pero google tiene millones por segundo, sólo así sabes tus fallos. Cada vez que intentes entrar a `http://ec2-54-224-151-83.compute-1.amazonaws.com/` te da error porque no tienes permisos .
+
+
+```sh
+ubuntu@ip-172-31-39-104:/var/log/nginx$ cd
+ubuntu@ip-172-31-39-104:~$ ls -l
+total 4
+drwxr-xr-x 3 ubuntu ubuntu 4096 Feb  9 12:45 react-todo # tiene permisos para todo el mundo de lectura y ejecucion
+```
+
+Si te vas a la carpeta superior
+
+```sh
+ubuntu@ip-172-31-39-104:/home$ ls -l
+total 4
+drwxr-x--- 5 ubuntu ubuntu 4096 Feb  9 12:51 ubuntu # sólo tiene permisos para ubuntu
+```
+
+**Cómo podemos saber qué usuario está usando ubunto**
+
+```sh
+ubuntu@ip-172-31-39-104:/home$ ps aux | grep nginx
+root     424  0.0  0.5  55368  5764 ?        Ss   Feb07   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data 4367  0.0  0.6  56000  6264 ?        S    13:54   0:00 nginx: worker process
+ubuntu   4395  0.0  0.2   7008  2304 pts/0    S+   14:12   0:00 grep --color=auto nginx
+```
+el que está intentando acceder es `nginx: worker process` porque siempre es el que trabaja, el master solo escucha el puerto. ¿qué usuario ejecuta el proceso ? -> `www-data`
+
+Como el usuario `www-data` no es ubuntu, te deniega el permiso.
+
+Podríamos mover el `www-data` y meterlo dentro de ubuntu (pero no tiene porque ser así, podríamos solucionalo como queramos). Si movemos la carpeta a `www-data` tendríamos que modificar el fichero de configuración porque le hemos dicho que la ruta estaba en `root /home/ubuntu/react-todo;` 
+
+**Movemos la carpeta a `www-data`**
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo mv /home/ubuntu/react-todo /var/www/
+ubuntu@ip-172-31-39-104:~$ ls -l /var/www
+        total 8
+        drwxr-xr-x 5 root   root   4096 Feb  7 15:39 html
+        drwxr-xr-x 3 ubuntu ubuntu 4096 Feb  9 12:45 react-todo
+```
+
+Hemos movido la carpeta y ahora pertenece a ubuntu y con estos permisos funcionaría `drwxr-xr-x 3 ubuntu ubuntu 4096 Feb  9 12:45 react-todo`.
+
+**Modificar el fichero de configuración de nginx**
+
+```sh   
+ubuntu@ip-172-31-39-104:~$ sudo nano /etc/nginx/sites-available/react-todo
+
+##### NANO #######
+server {
+        listen 80;
+        server_name ec2-54-224-151-83.compute-1.amazonaws.com;
+        root /var/www/react-todo;
+        index index.html;
+        location / {
+                try_files $uri $uri/ =404;
+        }
+}
+```
+
+```sh
+# comando para ver si hemos hecho bien las cosas
+ubuntu@ip-172-31-39-104:~$ sudo nginx -t
+    nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+    nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+
+# recargar el servicio
+ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx
+```
+
+1:18
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
