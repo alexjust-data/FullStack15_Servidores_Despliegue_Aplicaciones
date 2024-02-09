@@ -1125,8 +1125,494 @@ ubuntu@ip-172-31-39-104:~$ ls -l /var/www/html
     -rw-r--r-- 1 root root 38311 Feb  7 15:39 tables.html
 ```
 
+**Hemos conseguido publicar una web estática vía aws**
 
 Ahora vete al browser y recarga la página `https://54.224.151.83` la verás así `https://startbootstrap.com/template/sb-admin`
+
+---
+
+> [!NOTE] 
+> Continuamos con la configuracion de nginx pâra entender como con una configuracion de nginx podemos dar servicio a todos los dominios que queramos , tantos como la capacidad de servidor admita en cuanto a las visitas.
+
+**Vamos a desplegar una aplicacion de React**
+
+Descargamos la librería Redux
+
+https://github.com/mjbuckley/react-redux-todo-app
+
+React sirve para hacer una SPA single page aplication. No hay gran diferencia entre una página hecha en React a una página estática como la que desplegamos el otro día. Lo que pasa es que cuendo usamoe el [Router en React](https://github.com/mjbuckley/react-redux-todo-app) , ahí ya si que tenemos que hacer algo especial.
+
+Vamos a desplegar la típica aplicacion de to do
+
+![](/img/13.png)
+
+**Descargamos el código y compilamos la aplicacion de React**
+
+* Clono en local este repositorio https://github.com/mjbuckley/react-redux-todo-app.git
+
+```sh
+# clonando proyecto app to do
+➜  Servidores_Despliegue_Aplicaciones git clone https://github.com/mjbuckley/react-redux-todo-app.git
+    Cloning into 'react-redux-todo-app'...
+    remote: Enumerating objects: 320, done.
+    remote: Counting objects: 100% (30/30), done.
+    remote: Compressing objects: 100% (20/20), done.
+    remote: Total 320 (delta 23), reused 10 (delta 10), pack-reused 290
+    Receiving objects: 100% (320/320), 1.27 MiB | 3.60 MiB/s, done.
+    Resolving deltas: 100% (180/180), done.
+
+➜  Servidores_Despliegue_Aplicaciones ls -l
+    total 128
+    drwxr-xr-x   7 alex  staff    224 Feb  9 09:40 CLASES
+    drwxr-xr-x   3 alex  staff     96 Feb  6 15:21 Despliegue_AWS
+    drwxr-xr-x@ 13 alex  staff    416 Feb  9 10:05 FullStack15_Servidores_Despliegue_Aplicaciones
+    drwxr-xr-x  11 alex  staff    352 Feb  9 10:24 react-redux-todo-app
+    -rw-r--r--@  1 alex  staff  62219 Feb  7 16:02 startbootstrap-sb-admin-gh-pages.zip
+    drwxrwxr-x@ 16 alex  staff    512 Mar 25  2023 template
+
+# entramos en la carpeta
+➜  Servidores_Despliegue_Aplicaciones cd react-redux-todo-app 
+
+# instalamos dependencias
+➜  react-redux-todo-app git:(master) ✗ npm install   
+
+# buscamos el script para compilar ""build": "react-scripts build","
+➜  react-redux-todo-app git:(master) ✗ cat package.json
+{
+  "name": "react-redux-todo-app",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://mjbuckley.github.io/react-redux-todo-app",
+  "dependencies": {
+    "gh-pages": "^1.2.0",
+    "lodash": "^4.17.11",
+    "react": "^16.8.6",
+    "react-dom": "16.3.3",
+    "react-redux": "^5.1.1",
+    "react-router-dom": "^4.3.1",
+    "react-scripts": "1.1.5",
+    "redux": "^3.7.2",
+    "uuid": "^3.3.2"
+  },
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "redux-devtools": "^3.5.0"
+  }
+}
+
+# ejecuta el script build definido en el archivo package.json   
+# compila y empaqueta el código fuente en archivos optimizados para producción
+# seguro que te deja la aplicacin en una carpeta /dis o /build
+➜  react-redux-todo-app git:(master) ✗ npm run build      
+
+    > react-redux-todo-app@0.1.0 build
+    > react-scripts build
+
+    Creating an optimized production build...
+    Compiled successfully.
+
+    File sizes after gzip:
+
+    56.71 KB  build/static/js/main.1795c7d6.js
+    621 B     build/static/css/main.1af68ee8.css
+
+    The project was built assuming it is hosted at /react-redux-todo-app/.
+    You can control this with the homepage field in your package.json.
+
+    The build folder is ready to be deployed.
+    To publish it at https://mjbuckley.github.io/react-redux-todo-app, run:
+
+    npm run deploy
+
+    Find out more about deployment here:
+
+    http://bit.ly/2vY88Kr
+
+➜  react-redux-todo-app git:(master) ✗ 
+```
+
+--- 
+
+Lo que acabamos de hacer para construir la aplicacion de react es lo mismo que haríamos si lo hiciéramos con VSC. Es decir, abrimos la carpeta clonada desde VSC y veremos el archivo `packaje.json` que dentro tenemos el `script` para construir la aplicacion react y lo ejecutamos `npm run build `
+
+```json
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+```
+
+Te ha construido una carpeta `build`
+
+![](/img/14.png)
+
+---
+
+> [!IMPORTANT]
+> Truco impresionanteque hace poco que funciona
+
+---
+
+Creo archivo `.devcontainer.json` 
+
+`.devcontainer.json`
+
+```js
+{
+    "image": "node:latest"
+}
+```
+
+Hacer esto te permite que el entorno de desarrollo sea consistente y reproducible, independientemente del sistema operativo o de la configuración de la máquina host. Es decir, estas desarrollando dentro de un contenedor de Docker. Si tu aplicación luego se va a ejecutar dentro de un contenedor de Docker, tu podrías utilizar una imagen de Docker sobre la que se va a subir al servidor; es decir, desarrollar en el mismo entorno en la que se va a desarrollar la aplicación.
+
+Estamos en el caso más simple y es son muy amplias las posibilidades, pero también podríamos decirle que cree el `.devcontainer` en base a un archivo de `Docker compoust` y eso te cree todo el entorno de desarrollo.
+
+El archivo `.devcontainer.json` es una parte clave de la configuración de los Contenedores de Desarrollo en Visual Studio Code. Se utiliza para definir y configurar un entorno de desarrollo contenerizado que puede incluir herramientas, extensiones de VS Code, y configuraciones personalizadas necesarias para un proyecto específico. 
+
+Por ejemplo, en el curso de backend avanzado, teníamos que tener instalado `node, mongoDB, react, etc` por así decirlo yo te podría dar dos archivos `.devcontainer.json, docker-compose.yml` de manera que automáticamente con esto nos configurara todo el entorno sin hacer nada. Te acorta todo el tiempo de hacerte el setup del entorno. Te permite desarrollar exactamente en el mismo entorno que se desarrolla la app.
+
+Nosotros ahora mismo solo te estamos diciendo que quiero que mi entorno de desarrollo se base en node y que sea la última `"image": "node:latest"`.
+
+Entonces, instalada la extensión `Dev Containers` de VSC y también tener instalado `Docker` en local  abierto, le das al boton verde
+
+
+![](/img/16.png)
+
+
+Cuando le indicas reopen container te reinicia el VSC y te monta el contenedor. Cuando termine realmente estarás dentro de un contenedor de docker, puedes comprovarlo si abres la terminal y ves la direccion del contenedor
+
+```sh
+root@8d39e94b8d3d:/workspaces/react-redux-todo-app# 
+```
+
+Ahora puedes cargar las dependencias y compilamos la aplicacion de React
+
+```sh
+root@8d39e94b8d3d:/workspaces/react-redux-todo-app# npm i  
+
+        added 1344 packages, and audited 1345 packages in 1m
+
+        161 vulnerabilities (13 low, 73 moderate, 57 high, 18 critical)
+
+        To address issues that do not require attention, run:
+        npm audit fix
+
+        To address all issues (including breaking changes), run:
+        npm audit fix --force
+
+        Run `npm audit` for details.
+        npm notice 
+        npm notice New minor version of npm available! 10.2.4 -> 10.4.0
+        npm notice Changelog: https://github.com/npm/cli/releases/tag/v10.4.0
+        npm notice Run npm install -g npm@10.4.0 to update!
+        npm notice 
+
+root@8d39e94b8d3d:/workspaces/react-redux-todo-app# npm run build
+
+        > react-redux-todo-app@0.1.0 build
+        > react-scripts build
+
+        Creating an optimized production build...
+        (node:1290) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+        (Use `node --trace-deprecation ...` to show where the warning was created)
+        Compiled successfully.
+
+        File sizes after gzip:
+
+        56.77 KB  build/static/js/main.1795c7d6.js
+        621 B     build/static/css/main.1af68ee8.css
+
+        The project was built assuming it is hosted at /react-redux-todo-app/.
+        You can control this with the homepage field in your package.json.
+
+        The build folder is ready to be deployed.
+        To publish it at https://mjbuckley.github.io/react-redux-todo-app, run:
+
+        npm run deploy
+
+        Find out more about deployment here:
+
+        http://bit.ly/2vY88Kr
+
+root@8d39e94b8d3d:/workspaces/react-redux-todo-app# 
+```
+
+Puedes ver que te ha creado igual la carpeta `build` que es donde se forma la app, además si te vas a local, aunque estés dentro del contenedor, verás que se crea la carpeta porque está mapeando en el local.
+
+---
+
+El término "build" se refiere al proceso de transformar el código fuente de tu aplicación en un conjunto de archivos ejecutables o distribuibles que pueden ser desplegados en un servidor o entregados a los usuarios. En el contexto de aplicaciones web como una hecha con React.
+
+El resultado de este proceso es una carpeta (comúnmente denominada build, dist, o similar), que contiene todos los archivos optimizados y listos para ser desplegados en un servidor web. Esta carpeta incluye:
+
+* Archivos JavaScript empaquetados y minificados.
+* Archivos CSS optimizados.
+* Archivos de imágenes y otros activos estáticos.
+* Archivos HTML, en el caso de aplicaciones que generan vistas estáticas o utilizan SSR.
+
+El propósito de este proceso es asegurar que la aplicación sea lo más eficiente posible en términos de velocidad de carga y rendimiento en el navegador del usuario final. También ayuda a asegurar la compatibilidad con diferentes navegadores y dispositivos al transpilar y polifillar características modernas de JavaScript y CSS a versiones que sean soportadas universalmente.
+
+---
+
+Ahora el siguiente paso sería llevarme la app al servidor ¿podríamos hacerlo de otra manera que nos ahorrara trabajo?
+* Si lo hacer directamente el build en el servidor has de instalar node, **No es buena idea instalar cosas**, cuanto menos cosas hayas de mantener mejor. Todo esto consume un pico de momeria y cpu que nos puede dar problmeas.
+* Nunca se hace un `build` de ningún tipo en un servidor de producción.
+
+
+**Voy a conectar con aws** & **Quiero subir la carpeta `build` y sus archivos al servidor**
+
+```sh
+➜  Servidores_Despliegue_Aplicaciones ls -l
+        total 128
+        drwxr-xr-x   7 alex  staff    224 Feb  9 09:40 CLASES
+        drwxr-xr-x   3 alex  staff     96 Feb  6 15:21 Despliegue_AWS
+        drwxr-xr-x@ 13 alex  staff    416 Feb  9 10:25 FullStack15_Servidores_Despliegue_Aplicaciones
+        drwxr-xr-x@ 14 alex  staff    448 Feb  9 12:25 react-redux-todo-app
+        -rw-r--r--@  1 alex  staff  62219 Feb  7 16:02 startbootstrap-sb-admin-gh-pages.zip
+        drwxrwxr-x@ 16 alex  staff    512 Mar 25  2023 template
+
+➜  Servidores_Despliegue_Aplicaciones cd react-redux-todo-app 
+
+# acuerdate que tienes este comando para buscar "Ctrl + r"
+bck-i-search: scp_
+➜  react-redux-todo-app git:(master) ✗ scp -r -i ../Despliegue_AWS/web15.pem ../template ubuntu@54.224.151.83:/home/ubuntu
+
+# OJO : --> has de subir otra carpeta que se llama  
+➜  react-redux-todo-app git:(master) ✗ scp -r -i ../Despliegue_AWS/web15.pem ../react-redux-todo-app/build ubuntu@54.224.151.83:/home/ubuntu
+        favicon.ico            100% 3870    35.5KB/s   00:00    
+        index.html             100%  903     8.3KB/s   00:00    
+        404.html               100% 1851    17.1KB/s   00:00    
+        asset-manifest.json    1.8KB/s   00:00    
+        main.1af68ee8.css.map  2KB/s   00:00    
+        main.1af68ee8.css      13.5KB/s   00:00    
+        main.1795c7d6.js       450.4KB/s   00:00    
+        main.1795c7d6.js.map   9MB/s   00:00    
+        service-worker.js      30.0KB/s   00:00
+```
+
+**Me conecto al servidor**
+
+```sh
+# acuerdate que tienes este comando para buscar "Ctrl + r"
+bck-i-search: ssh
+➜  react-redux-todo-app git:(master) ✗ ssh -i ../Despliegue_AWS/web15.pem ubuntu@54.224.151.83 
+
+ubuntu@ip-172-31-39-104:~$ 
+ubuntu@ip-172-31-39-104:~$ ls -l
+        total 8
+        drwxr-xr-x 3 ubuntu ubuntu 4096 Feb  9 12:45 build
+        -rw-rw-r-- 1 ubuntu ubuntu    0 Feb  6 14:33 hello
+        drwxrwxr-x 5 ubuntu ubuntu 4096 Feb  7 15:31 template
+
+# elimino carpetas  archivos que no quiero
+ubuntu@ip-172-31-39-104:~$ 
+ubuntu@ip-172-31-39-104:~$ rm -rf hello template/
+ubuntu@ip-172-31-39-104:~$ ls -l
+        total 4
+        drwxr-xr-x 3 ubuntu ubuntu 4096 Feb  9 12:45 build
+
+# renombro el nombre de la carpeta build
+ubuntu@ip-172-31-39-104:~$ mv build react-todo
+ubuntu@ip-172-31-39-104:~$ ls -l
+total 4
+drwxr-xr-x 3 ubuntu ubuntu 4096 Feb  9 12:45 react-todo
+```
+
+**Quiero :** 
+
+**- Que la IP del servidor cargue una página.** 172.31.39.104  
+**- Que las DNS del servidor cargue otra página.** ec2-54-224-151-83.compute-1.amazonaws.com
+
+si haces un ping a la DNS
+
+```sh
+ubuntu@ip-172-31-39-104:~$ ping ec2-54-224-151-83.compute-1.amazonaws.com
+
+    PING ec2-54-224-151-83.compute-1.amazonaws.com (172.31.39.104) 56(84) bytes of data.
+    64 bytes from ip-172-31-39-104.ec2.internal (172.31.39.104): icmp_seq=1 ttl=64 time=0.012 ms
+```
+
+si te vas al Browser y cargas IP o DNS te cargará la misma página de la template
+
+puedes ver que de hecho es la misma IP a la que hace el ping.  
+Yo lo que quiero es que 
+* cuiando entres por IP carges la plantilla que ya teníamos
+* cuando entres por DNS carge la aplicacion de React
+
+---
+![](/img/17.png)
+
+---
+
+Lo hacemos porque si, peor fíjate que de esta forma, si tienes un dominio en propiedad, tu puedes generarte tantos subdominios como quieras y en cada subdominio mostrar una cosa diferente.
+
+**Una vez subido el codigo de la app al servidor, ¿qué hacemos?** 
+
+Algo tendremos que tocas en la configuracion de `nginx`
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cd /etc/nginx/
+ubuntu@ip-172-31-39-104:/etc/nginx$ ls -l
+        total 64
+        drwxr-xr-x 2 root root 4096 May 30  2023 conf.d
+        -rw-r--r-- 1 root root 1125 May 30  2023 fastcgi.conf
+        -rw-r--r-- 1 root root 1055 May 30  2023 fastcgi_params
+        -rw-r--r-- 1 root root 2837 May 30  2023 koi-utf
+        -rw-r--r-- 1 root root 2223 May 30  2023 koi-win
+        -rw-r--r-- 1 root root 3957 May 30  2023 mime.types
+        drwxr-xr-x 2 root root 4096 May 30  2023 modules-available
+        drwxr-xr-x 2 root root 4096 Feb  7 13:07 modules-enabled
+        -rw-r--r-- 1 root root 1447 May 30  2023 nginx.conf
+        -rw-r--r-- 1 root root  180 May 30  2023 proxy_params
+        -rw-r--r-- 1 root root  636 May 30  2023 scgi_params
+        drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-available
+        drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-enabled
+        drwxr-xr-x 2 root root 4096 Feb  7 13:07 snippets
+        -rw-r--r-- 1 root root  664 May 30  2023 uwsgi_params
+        -rw-r--r-- 1 root root 3071 May 30  2023 win-utf
+ubuntu@ip-172-31-39-104:/etc/nginx$ 
+```
+
+En estas dos carpetas hay casi lo mismo
+
+```sh
+drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-available
+drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-enabled
+```
+
+En `sites-available` vamos a encontrar ficheros de configuración de páginas webs, que pueden ser servidas o no con mi `nginx` y en esa carpeta es donde me voy a crear mi fichero de configuración de las páginas que voy a servir.
+
+En `sites-enabled` vamos a encontrar ficheros de configuración de las páginas web que `nginx` está sirviendo.
+
+Por una parte en sites-available tenemos el archivo default
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ ls -l sites-available/
+        total 4
+        -rw-r--r-- 1 root root 2412 May 30  2023 default
+```
+
+Por otra parte en sites-enabled tenemos 
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ ls -l sites-enabled/
+    total 0
+    lrwxrwxrwx 1 root root 34 Feb  7 13:07 default -> /etc/nginx/sites-available/default
+```
+
+fíjate que comienza con una `l` --> `lrwxrwxrwx` yesto nos dice que verdaderamente no es un archivo, es un acceso directo.
+
+> [!NOTE]
+> El archivo de configuración de mi sitio web, siempre lo voy a crear en `/etc/nginx/sites-available/default`
+> 
+> De esta manera puedo tener 15 páginas web configuradas, e imagina que estas 15 son de 15 clientes, imaginate que uno no me paga, pues lo que no haré será eliminar todo el proyecto del servidor porque si el mes que viene me paga yo puedo activar de nuevo desde este archivo y dar servicio de nuevo al impagado. Esto lo harías borrando el acceso directo y cuando te vuelva a pagar escribes el acceso directo.
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ cd sites-available/
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano react-todo
+
+# #######  NANO EJEJMPLO ########
+server {
+        listen 80;
+        server_name <PON AQUI TU DNS DE AWS>; # 
+        root <TU RUTA A LA APP DE REACT>;
+        index index.html;
+        location / {
+                try_files $uri $uri/ =404;
+        }
+}
+
+# ##########  NANO  #############
+server {
+        # quiero que esta web esté disponible a través del puerto 80, pon el que quieras
+        listen 80; 
+        # cuando la petición sea de este dominio, este servidor tiene que responder, no la IP, si no este DNS
+        server_name ec2-54-224-151-83.compute-1.amazonaws.com;
+        # la carpeta donde están los archivos 
+        root /home/ubuntu/react-todo;
+        # cuadno no te pidan una ruta o un archivo intenta buscar este archivo "/home/ubuntu/react-todo/index.html"
+        index index.html;
+        # importa el orden; permite aplicar configuraciones diferentes en función de la ruta que pida el usuario
+        # si pones location /hola sólo aplicaría si la url que pide el usuario empieza por /hola
+        location / {                            # nosotros ahora ponemos / así es cualquier url,la raiz
+                try_files $uri $uri/ =404;      # quiera que haga nginx que sirva los archivos que estñan en esta ruta
+        }
+}
+
+```
+---
+> [!IMPORTANT]
+>* `try_files` : nginx intentará servir los archivos que están en root `/home/ubuntu/react-todo`
+>* `$uri` : usando como ruta la uri que te está pidiendo el usuario 
+>* `$uri/` : si la ruta no existe como un archivo, intenta buscarla como carpeta
+>* `=404`: pues le dices que no existe;
+--- 
+
+
+**Sguiente paso**
+
+
+Esto anterior lo hemos creado en `sites-available`  pero todavía `nginx` no lo estaría usando para qdecorle que tiene que usarlo lo hemos de poner en la carpeta `sites-enabled`.
+
+Las buenas prácticas dicen que has de crear un acceso directo. Como 
+
+`drwxr-xr-x 2 root root 4096 Feb  7 13:07 sites-enabled`
+
+pertenece a root tendremos que usar sudo  
+
+¿qué es ls -s? https://medium.com/@307/hard-links-and-symbolic-links-a-comparison-7f2b56864cdd
+
+```sh
+# ls -s
+# /etc/nginx/sites-available/react-todo : ruta del fichero original
+# /etc/nginx/sites-enabled/react : destino donde quiero el acceso directo (react es un nombre inventado)
+sudo ln -s /etc/nginx/sites-available/react-todo /etc/nginx/sites-enabled/react
+
+# si haces un cat puedes ver el fichero creado 
+ubuntu@ip-172-31-39-104:/etc/nginx$ cat /etc/nginx/sites-enabled/react
+        server {
+                listen 80;
+                server_name ec2-54-224-151-83.compute-1.amazonaws.com;;
+                root /home/ubuntu/react-todo;
+                index index.html;
+                location / {
+                        try_files $uri $uri/ =404;
+                }
+        }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
