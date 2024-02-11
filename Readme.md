@@ -1746,23 +1746,236 @@ server {
 # comando para ver si hemos hecho bien las cosas
 ubuntu@ip-172-31-39-104:~$ sudo nginx -t
     nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-    nginx: configuration file /etc/nginx/nginx.conf test is successful
+    nginx: configuration file /etc/nginx/nginx.conf test is successful # nos dice que está bien
 
 
 # recargar el servicio
-ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx
+ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx # recargamos el servicio
 ```
 
-1:18
+Ahora voy al browser y recargo la app con las dns : **Public IPv4 DNS ec2-54-224-151-83.compute-1.amazonaws.com**
+
+---
+![](/img/18.png)
+
+---
+
+Me está dando problemas al recargar los archivos de .css y .js ¿este problmea es de nginx o de la aplicación?
+
+Pues si `nginx` el archivo `index` lo carga, index es el primero que se ha cargado, esto quiere decir que gninx es capaz de cargar el archivo que tiene que encontrar; pero por algún motivo la aplicación le está diciendo que no cargue los archivos desde la raiz 
+
+Si tu copias la url del archivo de JS que falla 
+
+---
+![](/img/19.png)
+
+---
+
+No te carga
+
+---
+![](/img/20.png)
+
+---
+ pero si le quitas de la direccion en `/react-redux-todo-app/` si que te carga
+
+---
+![](/img/21.png)
+
+---
 
 
+Entonces por algún motivo la aplicación cuando carga los archivos te está metido este `/react-redux-todo-app/`. El problmea está que cuando te vas al codigo de la app en VSC al `package.josin` existe un atributo que se llama `homepage`
+
+```json
+{
+  "name": "react-redux-todo-app",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://mjbuckley.github.io/react-redux-todo-app",
+  "dependencies": {
+
+```
+
+y este atributo, con las app´s que se ha creado generalmente con react app o un proyecto de react , todo lo que intenta cargr te pone la ruta que le pongas aquí delante https://mjbuckley.github.io/`react-redux-todo-app`
+
+Es  un error de cuando se ha hecho el kit de la aplicacion. Entonces...
+* Borramos esta linea del paqkete
+* hemos de volver hacer el/bin de la app
+* volver a subirlo al servidor
+* volver a mover la carpeta
+
+**1º borrar la carpeta `bin/` que existe ahora mismo** (creará otro diferente)
+
+**2º eliminar la linea que nos da problemas**
+
+```sh
+{
+  "name": "react-redux-todo-app",
+  "version": "0.1.0",
+  "private": true,
+  # "homepage": "https://mjbuckley.github.io/react-redux-todo-app",
+  "dependencies": {
+
+```
+
+**3º construir la aplicció**
+
+```sh
+root@8d39e94b8d3d:/workspaces/react-redux-todo-app# rm -rf build/
+root@8d39e94b8d3d:/workspaces/react-redux-todo-app# npm run build
+
+        > react-redux-todo-app@0.1.0 build
+        > react-scripts build
+
+        Creating an optimized production build...
+        (node:12529) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+        (Use `node --trace-deprecation ...` to show where the warning was created)
+        Compiled successfully.
+
+        File sizes after gzip:
+
+        56.76 KB  build/static/js/main.0c247a1d.js
+        621 B     build/static/css/main.1af68ee8.css
+
+        The project was built assuming it is hosted at the server root.
+        You can control this with the homepage field in your package.json.
+        For example, add this to build it for GitHub Pages:
+
+        "homepage" : "http://myname.github.io/myapp",
+
+        The build folder is ready to be deployed.
+        You may serve it with a static server:
+
+        npm install -g serve
+        serve -s build
+
+        Find out more about deployment here:
+
+        http://bit.ly/2vY88Kr
+```
 
 
+**4º crear e servidor**
+
+```sh
+➜  react-redux-todo-app git:(master) ✗ scp -r -i ../Despliegue_AWS/web15.pem ../react-redux-todo-app/build ubuntu@54.224.151.83:/home/ubuntu             
+        favicon.ico            100% 3870    35.5KB/s   00:00    
+        index.html             100%  903     8.3KB/s   00:00    
+        404.html               100% 1851    17.1KB/s   00:00    
+        asset-manifest.json    1.8KB/s   00:00    
+        main.1af68ee8.css.map  2KB/s   00:00    
+        main.1af68ee8.css      13.5KB/s   00:00    
+        main.1795c7d6.js       450.4KB/s   00:00    
+        main.1795c7d6.js.map   9MB/s   00:00    
+        service-worker.js      30.0KB/s   00:00
+```
+
+Puedes ver en el servidor que la carpeta está creada
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cd
+ubuntu@ip-172-31-39-104:~$ ls -l
+        total 4
+        drwxr-xr-x 3 ubuntu ubuntu 4096 Feb 11 14:36 build
+```
+
+Ahora en el servidor todo lo que hay en la carpeta `build` hay que moverlo a la carpeta `react-todo`
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo rm -rf /var/www/react-todo/ # elimino la carpeta react-todo
+ubuntu@ip-172-31-39-104:~$ sudo mv build /var/www/react-todo # creo la carpeta react-todo con build
+```
+
+Ahora ya funciona la app
+
+---
+
+![](/img/22.png)
+
+---
+
+**FASE 1 COMPLETADA**
+
+Fíjate que si tecleeas algún link, si te fijas, la dirección web cambia como sicambiasen las páginas pero sabemos que página solo hay una que no está navegando por el servidor todo ocurre por la single page.
+
+* `http://ec2-54-224-151-83.compute-1.amazonaws.com/SHOW_COMPLETED`
+* `http://ec2-54-224-151-83.compute-1.amazonaws.com/SHOW_ACTIVE`
+* `...`
+
+Si tu ahora copias las direcciones y las pegas para navegar verás que te da error, esto es porque le habíamos dicho a `nginxs` qie entrara por `/` y si no encontrara el archivo específico que cargara el 404
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cat /etc/nginx/sites-enabled/react
+        server {
+                listen 80;
+                server_name ec2-54-224-151-83.compute-1.amazonaws.com;
+                root /var/www/react-todo;
+                index index.html;
+                location / {
+                        try_files $uri $uri/ =404;
+                }
+        }
+```
+
+Fíjate que el la carpeta `/var/www/react-todo` que es donde yo le he dicho que busque los archivos ¿hay un archivo `index.html`?
+
+```sh
+ubuntu@ip-172-31-39-104:/var/www/react-todo$ ls -l
+    total 24
+    -rw-r--r-- 1 ubuntu ubuntu 1851 Feb 11 14:36 404.html
+    -rw-r--r-- 1 ubuntu ubuntu  196 Feb 11 14:36 asset-manifest.json
+    -rw-r--r-- 1 ubuntu ubuntu 3870 Feb 11 14:36 favicon.ico
+    -rw-r--r-- 1 ubuntu ubuntu  840 Feb 11 14:36 index.html
+    -rw-r--r-- 1 ubuntu ubuntu 3164 Feb 11 14:36 service-worker.js
+    drwxr-xr-x 4 ubuntu ubuntu 4096 Feb 11 14:36 static
+```
+
+si tu le dices que cargue en el browser `http://ec2-54-224-151-83.compute-1.amazonaws.com/asset-manifest.json` te lo va a cargar. Esto es porque `nginx` dice : 
+* de este dominio : `ec2-54-224-151-83.compute-1.amazonaws.com`
+* tengo que ir a esta carpeta : `/var/www/react-todo`
+* de esta carpeta está el archivo `asset-manifest.json` pues lo cargo.
+
+Cuando le digo que cargue el archivo `http://ec2-54-224-151-83.compute-1.amazonaws.com/SHOW_COMPLETED` no lo encuentra ¿cómo lo solucionamos?
+
+Esta instruccion `location / { try_files` decía :
+* intenta servor los archivos que te dicen en la `$uri`"
+* si no lo encuentras, intenta servir la carpeta `$uri/`
+* y si no hay carpeta `404`
+
+en tonces le vamos a decir que ni no encuentra ni esta `$uri` ni esta `$uri/` que devuelva el index y como el index arracan la app de react pues ya se ocupará react de hacerlo. ¿siempre vas a servir el index? no, eso sería si colocas el index el primero, pero estamos diciendo que si no encuentra `$uri` ni `$uri/`, en ese caso que sirva el index.
+
+> [!NOTE] 
+> Entonces estamos y queremos que React gestione cuando pase ese caso
+
+**Modifquemos el archivo de configuración de configuración de nginx**
+
+```sh
+ubuntu@ip-172-31-39-104:/var/www/react-todo$ sudo nano /etc/nginx/sites-available/react-todo 
+```
+
+```sh
+        server {
+                listen 80;
+                server_name ec2-54-224-151-83.compute-1.amazonaws.com;
+                root /var/www/react-todo;
+                index index.html;
+                location / {
+                        try_files $uri $uri/ /index.html;
+                }
+        }
+```
 
 
+```sh
+ubuntu@ip-172-31-39-104:/var/www/react-todo$ sudo nginx -t # compruebo que todo esté bien
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
 
-
-
+```sh
+ubuntu@ip-172-31-39-104:/var/www/react-todo$ sudo systemctl reload nginx # recargo el sistema
+```
 
 
 
