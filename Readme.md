@@ -1982,12 +1982,20 @@ ubuntu@ip-172-31-39-104:/var/www/react-todo$ sudo systemctl reload nginx # recar
 # Desplegando dos aplicaciones con node
 
 
-* 1ª sin base de datos, va a ser un chat
-* 2º con base de datos, necesitamos instalar mongoDB
+* CASO 1 sin base de datos, va a ser un chat
+* CASO 2 con base de datos, necesitamos instalar mongoDB
 
 
-## NODE
+## CASO 1 sin base de datos, va a ser un chat
+---
 
+> [!IMPORTANT]
+> ### 1er paso del CASO 1, instalo la app y compruebo que funciona
+>
+> Comenzamos...
+--- 
+
+**NODE**
 
 * Node funciona “tal cual” desarrollamos en producción
 * Lo que debemos hacer es que arranque cuando el servidor se inicie (por si hubiera un reinicio del servidor inesperado)
@@ -2264,6 +2272,13 @@ Hasta ahora estamos comprovando que la aplicación funciona conectándonos direc
 * La cargo al servidor y doy los pasos necesario para ver que todo funciona bien en el servidor.
 * si todo va bien, primer paso conseguido
 * a partir de ahora pondremos intermediarios entre el servidor y yo. Por ejemplo querremos que alguien esté pendiente de que no se apague nunca la app; y este es al caso del `gestor de procesos` con https://pm2.io/
+
+
+---
+> [!IMPORTANT]
+> 
+> ## 2do paso del CASO 1, meto un intermediario
+---
 
 
 **Usamos PM2 como gestor de procesos**
@@ -2588,7 +2603,349 @@ De ehcho fíjate donde está instalado `/home/pepe/`
 ```sh
 pepe@ip-172-31-39-104:~$ which pm2
         /home/pepe/.nvm/versions/node/v16.20.2/bin/pm2
+
+pepe@ip-172-31-39-104:~$ which nginx
+        /usr/sbin/nginx
+
+pepe@ip-172-31-39-104:~$ which node
+        /home/pepe/.nvm/versions/node/v16.20.2/bin/node
 ```
+
+Entonces para que `pm2` arranque cuando cae el servidor
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 startup
+    [PM2] Init System found: systemd
+    [PM2] To setup the Startup Script, copy/paste the following command:
+sudo env PATH=$PATH:/home/pepe/.nvm/versions/node/v16.20.2/bin /home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/bin/pm2 startup systemd -u pepe --hp /home/pepe
+```
+
+> [!NOTE]
+> esto es lo más jodido de entender de pm2
+
+Si leemos dice:
+
+* [PM2] Init System found: systemd
+* [PM2] To setup the Startup Script, copy/paste the following command:
+
+Copia y pega el comando
+
+¿Qué hace `pm2 startup`? analiza el ecosistema para ver como se tiene que instalar; y en una de las fases descubre que el sistema de inicio es `systemd` porque los nuevo linux utilizan para la gestion de los servicios.
+Como ahora que está instalado dentro del usuario `pepe` te genera este comando desglosado para entender mejor cada parte:
+
+* `sudo`: Ejecuta el comando que sigue con privilegios de superusuario ubuntu, lo que es necesario para realizar cambios en los servicios de inicio del sistema.
+
+* `env PATH=$PATH:/home/pepe/.nvm/versions/node/v16.20.2/bin`: Establece una variable de entorno PATH que se utiliza para determinar dónde buscar los ejecutables. Aquí, está añadiendo el directorio binario de la versión específica de Node.js instalada a través de nvm (Node Version Manager) al PATH actual.
+
+* `/home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/bin/pm2`: Es el camino al ejecutable pm2 que se quiere utilizar.
+
+* `startup systemd`: Este es el comando de pm2 que configura el sistema para arrancar pm2 al inicio. systemd es el sistema de inicio y gestión de servicios utilizado por muchas distribuciones de Linux modernas.
+
+* `-u pepe`: Especifica bajo qué usuario se debe ejecutar el servicio pm2 al inicio. En este caso, se está configurando para que se ejecute como el usuario pepe.
+
+* `--hp /home/pepe`: Establece el directorio home del usuario con el que se ejecutará el servicio pm2. Es una abreviatura de --home-path.
+
+Esto te configura todo para que arranque cuando se cae el sistema con el usuario `pepe`
+
+
+```sh
+pepe@ip-172-31-39-104:~$ logout
+ubuntu@ip-172-31-39-104:~$ sudo env PATH=$PATH:/home/pepe/.nvm/versions/node/v16.20.2/bin /home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/bin/pm2 startup systemd -u pepe --hp /home/pepe
+
+                        -------------
+
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+        _\///______________\///______________\///__\///////////////__
+
+
+                          Runtime Edition
+
+        PM2 is a Production Process Manager for Node.js applications
+                     with a built-in Load Balancer.
+
+                Start and Daemonize any application:
+                $ pm2 start app.js
+
+                Load Balance 4 instances of api.js:
+                $ pm2 start api.js -i 4
+
+                Monitor in production:
+                $ pm2 monitor
+
+                Make pm2 auto-boot at server restart:
+                $ pm2 startup
+
+                To go further checkout:
+                http://pm2.io/
+
+
+                        -------------
+
+[PM2] Init System found: systemd
+```
+
+Reiniciamos el ordenador 
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo reboot
+ubuntu@ip-172-31-39-104:~$ Connection to 54.224.151.83 closed by remote host.
+        Connection to 54.224.151.83 closed.
+
+
+➜  react-redux-todo-app git:(master) ✗ ssh -i ../Despliegue_AWS/web15.pem ubuntu@54.224.151.83
+        Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
+
+        * Documentation:  https://help.ubuntu.com
+        * Management:     https://landscape.canonical.com
+        * Support:        https://ubuntu.com/advantage
+
+        System information as of Mon Feb 12 07:55:37 UTC 2024
+
+        System load:  0.66845703125     Processes:             104
+        Usage of /:   34.3% of 7.57GB   Users logged in:       0
+        Memory usage: 24%               IPv4 address for eth0: 172.31.39.104
+        Swap usage:   0%
+
+        * Ubuntu Pro delivers the most comprehensive open source security and
+        compliance features.
+
+        https://ubuntu.com/aws/pro
+
+        Expanded Security Maintenance for Applications is not enabled.
+
+        26 updates can be applied immediately.
+        To see these additional updates run: apt list --upgradable
+
+        Enable ESM Apps to receive additional future security updates.
+        See https://ubuntu.com/esm or run: sudo pro status
+
+
+        Last login: Mon Feb 12 07:30:26 2024 from 85.87.66.72
+
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ ps aux | grep pm2
+pepe         573  0.5  5.2 828784 51200 ?        Ssl  07:54   0:00 PM2 v5.3.1: God Daemon (/home/pepe/.pm2)
+ubuntu       820  0.0  0.2   7008  2304 pts/0    S+   07:56   0:00 grep --color=auto pm2
+```
+
+El chat está funcionando `http://54.224.151.83:3000/`
+
+`pm2` cuando arrancas varias aplicacon es con `pm2`
+
+Si ne te funciona has de saber que antes se hacía `pm2 save` en este punto para que funcionara.
+
+---
+> [!IMPORTANT]
+> 
+> ## 3do paso del CASO 1, Nhinx como proxy inverso**
+>
+> ¿quien es el responsable de arrancar la aplicación? ahora nosotros ya no ejecutamos el `npm start`, ahora es pm2.  
+> Funciona, entonces ... ¿que falta ahora?
+>
+> Mira tu dirección de browser del chat ... `http://54.224.151.83:3000/` quitemos ese `:3000`
+---
+
+¿Como acceder al chat sin la necesidad de acceder al 3000?   
+
+**Solucion** 
+
+Pues lo ejecuto en el puerto 80.
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ cd node-chat/
+pepe@ip-172-31-39-104:~/node-chat$ ls -l
+        total 92
+        -rw-rw-r--  1 pepe pepe  1079 Feb 11 16:06 LICENSE
+        -rw-rw-r--  1 pepe pepe  2691 Feb 11 16:06 README.md
+        -rw-rw-r--  1 pepe pepe 14805 Feb 11 16:06 app.js
+        -rw-rw-r--  1 pepe pepe   234 Feb 11 16:06 config.json
+        drwxrwxr-x  2 pepe pepe  4096 Feb 11 16:06 lib
+        drwxrwxr-x 58 pepe pepe  4096 Feb 11 16:12 node_modules
+        -rw-rw-r--  1 pepe pepe 41017 Feb 11 16:12 package-lock.json
+        -rw-rw-r--  1 pepe pepe   347 Feb 11 16:06 package.json
+        drwxrwxr-x  7 pepe pepe  4096 Feb 11 16:06 public
+        drwxrwxr-x  2 pepe pepe  4096 Feb 11 16:06 views
+
+pepe@ip-172-31-39-104:~/node-chat$ cat config.json
+        {
+            "log": true,
+            "port": 3000,
+            "url": "/",
+            "ssl": {
+                "use": false,
+                "key": "/path/to/your/ssl.key",
+                "cert": "/path/to/your/ssl.crt"	
+            },
+                "readline": {
+                    "use": true,
+                "prompt": "[--:--:--][CONSOLE] "
+                }
+        }
+```
+Sería una tentación combiarlo ahí, pero no funcionará.  
+
+**Problema** 
+
+Cualquier proceso por debajo de un 1024 tiene que ser root.  
+Yo quiero que el chat se ejecute en el puerto 80.  
+Pero no quiero que la app la ejecute un usuario administrador por problmeas de seguridad.  
+
+Además el 80 soportaba nginx con mucho trafico. Pues vamos a usar nginx para solucionar ese problmea.
+
+![](/img/28.png)
+
+Cada aplicacion (chatapp.com, gitlab.chat, app.com, ci.chatapp.com, blog.chatapp.com) usa una technología diferente (node, ...). Cada uno de estos sistemas se ejecuta en un puerto por encima del 1024 porque así se ejecutan con usuario que tiene provilegio normales; y nginx está en el puerto 80 escuchando; entonces ngins hará de intermediario entre peticiones y le pasará de uno y a otro 
+
+Entonces esto es un **proxy inverso** y ¿como es uno normal? pues hace un trabajo precido pero al revés cuando tienes un proxy te adstrae de lo que hay por detrás.
+
+**Fichero de configuración de sitios**
+
+ejemplo
+
+```sh
+    # cualquier cosa que no sea estático, se lo pasamos a node
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_pass http://127.0.0.1:3000; # pasamos a node la petición, en este caso al chat nuestro
+        proxy_redirect off; # no redirigimos
+}
+```
+
+qué pasa si está corriendo en otro servidor? tendrás que poner la ip del otro servidor, lo enviará al otro ordenador.
+El problema está si sacrificas la ip o la dns, hemos de elegir. Nuestro caso vamos a desactivar el template de la dns y el chat seguirá por la ip
+
+**desactivamos el template** 
+
+está cargando en defoult
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo rm /etc/nginx/sites-enabled/default
+```
+
+**Configuramos en nuevo sitio del chat**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cd /etc/nginx/
+ubuntu@ip-172-31-39-104:/etc/nginx$ cd sites-available/
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano chat
+
+        server {
+                listen 80 default; # este responde la llamada.
+                location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                        proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                        proxy_redirect off; # no quiero que hagas ninguna redirección.
+                }
+        }
+```
+
+Los dominios en qué se transofrman, que hay detrás, cuado haces un ping a esos dominio se tranforma en una `ip`, la ip de una máquina.
+Cuando te hacen una llamada alguien va a responder, en este caso responde el que está por defecto `listen 80 default;`  
+Si accedes al servidor por la ip alguien ha de responder a esa petición, el que está por defecto `listen 80 default;`  
+
+NO es o habitual, yo el servidor que monto lo redirijo a google, porque no quiero que nadie me llame por ip. Entonces si quieres sólo tener peticiones por dominio será de otra forma porque cuando pones el default solo es pare recibir las peticiones por ip.
+
+**Activar configuración ~ acceso directo**
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo ln -s /etc/nginx/sites-available/chat /etc/nginx/sites-enabled/chat
+```
+
+**Comprobar que la sintaxi es correcta**
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+**Recargamos**
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo systemctl reload nginx
+```
+
+si está todo bien debería funcionar el chat por la ip `54.224.151.83`
+
+---
+
+![](/img/29.png)
+
+---
+
+Ahora hay dos intermediario entre el chat y yo, `pm2` y ahora se conecta primero a `nginx` y este te envía a pm2.
+
+**Problema** : lapágina carga pero no chatea. Fíjate que si pones puerte `:3000` funciona pero su lo pasas primero por nginx no chatea. ¿ como solucionamos, qué miramos?   la app va bien porque chatea por el puerto 3000, pero algo ocurre. Nginx carga el chat en el puerto 80 es decir que va bien, pero algo ocurre, nginx y node hablan.
+
+---
+
+![](/img/29.png)
+
+---
+
+no están funcionando los `Websocker` de node.   
+
+**Solucion** 
+
+https://www.nginx.com/blog/websocket-nginx/
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano chat
+
+server {
+    listen 80 default; # Escucha en el puerto 80, que es el puerto estándar para HTTP. 
+    location / { # Este bloque maneja todas las peticiones que llegan a la raíz del dominio ('/').
+        proxy_pass http://127.0.0.1:3000; # Redirecciona las peticiones a la aplicación que se ejecuta en localhost en el puerto 3000.
+        proxy_redirect off; # Deshabilita la modificación de las cabeceras de respuesta 'Location' y 'Refresh' por parte de Nginx.
+        proxy_http_version 1.1; # Utiliza HTTP/1.1 en la conexión al servidor proxy.
+        proxy_set_header Upgrade $http_upgrade; # Establece la cabecera 'Upgrade' par permitir comunicación del protocolo WebSocket.
+        proxy_set_header Connection "Upgrade"; # Establece la cabecera 'Connection' par permitir comunicación del protocolo WebSocket.
+        proxy_set_header Host $host; # Establece la cabecera 'Host' para pasar el host original solicitado por el cliente.
+    }
+}
+
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nginx -t
+    nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+    nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo systemctl reload nginx
+```
+
+> [!NOTE]
+> El mejor dato es el que no guardas...
+> El mejor paquete es el que no instalas...
+> El mejor puerto es que no tienes abierto...
+>
+> ¿El puerto :3000 hace falta tenerlo abierto? este te ayudó a permitir que 
+>* la app conectándote directamente a ella funciona.
+>* que la app haciendo que la gestione pm2 funciona también
+>* y ya he conseguido que poniendo por delante la aplicacion nginx funcione correctmente.
+
+Borrando ...
+
+---
+
+![](/img/31.png)
+
+---
+
+![](/img/32.png)
+
+---
+
+![](/img/33.png)
+
+---
 
 
 
