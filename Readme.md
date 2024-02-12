@@ -1979,31 +1979,616 @@ ubuntu@ip-172-31-39-104:/var/www/react-todo$ sudo systemctl reload nginx # recar
 
 
 
+# Desplegando dos aplicaciones con node
 
 
+* 1ª sin base de datos, va a ser un chat
+* 2º con base de datos, necesitamos instalar mongoDB
 
 
+## NODE
 
 
+* Node funciona “tal cual” desarrollamos en producción
+* Lo que debemos hacer es que arranque cuando el servidor se inicie (por si hubiera un reinicio del servidor inesperado)
+* Para ello, podemos usar supervisor: un gestor de procesos para apps Node
+* Reinicia las apps si se caen o son matadas : para hacer eso necesitaremos un `gestor de procesos`
+* Es más sencillo que crear un script para rc.d o systemd
+
+**1º Crear un usuario para la aplicación**
+
+```sh
+sudo adduser <app>
+```
+
+Crearemos app que hemos hecho nosotros o mi equipo, esto significa que nos podemos preparar un sudo install y que todo eso funcione pero es muy complejo, lo subiremos al servidor y que funciones.
+
+Cualquier preoceso corre con un usuario. Actualemente tenemos un usuario `ubuntu` que puede adquirir provilegio de superadministrador, es bueno que no lo uses así por los hackers.
+
+Cualquier app que está en internet tiene que correr con un usuario que no tenga privilegios de gran cosa. Lo ideal es un usuario por aplicacion.
+
+**2º Bloquear la cuenta del usuario de la app**
+
+Nunca pueda autenticarse nadie desde fuera
+
+```sh
+passwd -l <app>
+```
+
+**3º Convertirnos en de la aplicación**
+
+nos vamos a comvertir en ese usuario
+
+```sh
+sudo -u <app> -i
+```
+
+--- 
+
+> [!NOTE]
+> Comenzamos ... 
+
+**1º Crear un usuario para la aplicación**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo adduser pepe
+    Adding user `pepe' ...
+    Adding new group `pepe' (1001) ...
+    Adding new user `pepe' (1001) with group `pepe' ...
+    Creating home directory `/home/pepe' ...
+    Copying files from `/etc/skel' ...
+    New password: 
+    Retype new password: 
+    passwd: password updated successfully
+    Changing the user information for pepe
+    Enter the new value, or press ENTER for the default
+        Full Name []: 
+        Room Number []: 
+        Work Phone []: 
+        Home Phone []: 
+        Other []: 
+    Is the information correct? [Y/n] 
+
+ubuntu@ip-172-31-39-104:~$ 
+```
 
 
+**2º Bloquear la cuenta del usuario de la app**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo passwd -l pepe
+    passwd: password expiry information changed.
+```
+
+Voy a comprovar que no puedo entrar desde otra terminal
+
+```sh
+➜  ~ ssh pepe@54.224.151.83  
+pepe@54.224.151.83: Permission denied (publickey).
+➜  ~ ssh pepe@54.224.151.83 
+pepe@54.224.151.83: Permission denied (publickey).
+➜  ~ 
+```
 
 
+**3º Convertirnos en de la aplicación**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ whoami
+pepe
+pepe@ip-172-31-39-104:~$ 
+```
+
+Se ha convertido en `pepe` pero la sesion de ubunto sigue activa
+
+```sh
+pepe@ip-172-31-39-104:~$ logout
+ubuntu@ip-172-31-39-104:~$ 
+```
+
+---
+
+### Queremos instalar una aplicacion NODE
+
+¿Qué necesito tener? NODE instalado. pero su haces `sudo apt install node` se instalará la que tenga node específica y estaría diciendo que si quiero despelgar varias app tengan que trabajar todas con la misma versión de node. Para eso tenemos **Node Version Manager** y es lo que vamos a instalar primero.
+
+https://github.com/creationix/nvm 
+
+**Nos comvertimos en pepe para despligar las aplicacoines**
+
+```sh
+sudo -u pepe -i
+```
+
+**Installing and Updating**
+
+https://github.com/creationix/nvm 
+
+`curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash` descarga n script y lo ejecuta. No es buena idea que lo descargue en nuestro servidor directamente. Nos vamos a fiar porque es nvm.
+
+```sh
+pepe@ip-172-31-39-104:~$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                        Dload  Upload   Total   Spent    Left  Speed
+        100 16555  100 16555    0     0   187k      0 --:--:-- --:--:-- --:--:--  190k
+        => Downloading nvm from git to '/home/pepe/.nvm'
+        => Cloning into '/home/pepe/.nvm'...
+        remote: Enumerating objects: 365, done.
+        remote: Counting objects: 100% (365/365), done.
+        remote: Compressing objects: 100% (314/314), done.
+        remote: Total 365 (delta 43), reused 156 (delta 25), pack-reused 0
+        Receiving objects: 100% (365/365), 365.11 KiB | 13.04 MiB/s, done.
+        Resolving deltas: 100% (43/43), done.
+        * (HEAD detached at FETCH_HEAD)
+        master
+        => Compressing and cleaning up git repository
+
+        => Appending nvm source string to /home/pepe/.bashrc
+        => Appending bash_completion source string to /home/pepe/.bashrc
+        => Close and reopen your terminal to start using nvm or run the following to use it now:
+
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+pepe@ip-172-31-39-104:~$ 
+```
+
+Si lees bien te está diciendo que reinicies la terminal
+
+```sh
+pepe@ip-172-31-39-104:~$ logout # salimos
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i # entramos
+pepe@ip-172-31-39-104:~$ nvm
+        Node Version Manager (v0.39.7)
+
+        Note: <version> refers to any version-like string nvm understands. This includes:
+        - full or partial version numbers, starting with an optional "v" (0.10, v0.1.2, v1)
+        - default (built-in) aliases: node, stable, unstable, iojs, system
+        - custom aliases you define with `nvm alias foo`
+
+        Any options that produce colorized output should respect the `--no-colors` option.
+pepe@ip-172-31-39-104:~$
+```
+
+**Instalmos la version node que necesitamos para el chat**
+
+https://github.com/igorantun/node-chat 
+
+Es un chat hecho no node.
+
+Tienes que hacer un fork en tu cuenta de github.
+
+Acabo de hacerun frok a guthub de este proyecto, entonces vamos a simular que es nuestra app que la hemos hecho nosotros.
+Descargamos el codigo para que en el servidor esté el codigo de alguna manera
 
 
+```sh
+pepe@ip-172-31-39-104:~$ git clone https://github.com/alexjust-data/node-chat.git
+    Cloning into 'node-chat'...
+    remote: Enumerating objects: 565, done.
+    remote: Counting objects: 100% (155/155), done.
+    remote: Compressing objects: 100% (16/16), done.
+    remote: Total 565 (delta 144), reused 139 (delta 139), pack-reused 410
+    Receiving objects: 100% (565/565), 757.35 KiB | 12.84 MiB/s, done.
+    Resolving deltas: 100% (310/310), done.
+
+pepe@ip-172-31-39-104:~$ ls -l
+total 4
+drwxrwxr-x 6 pepe pepe 4096 Feb 11 16:06 node-chat
+```
+
+Este chat sólo funciona con node16, como ya tenemos nvm instalado 
+
+```sh
+pepe@ip-172-31-39-104:~$ nvm install 16
+Downloading and installing node v16.20.2...
+Downloading https://nodejs.org/dist/v16.20.2/node-v16.20.2-linux-x64.tar.xz...
+######################################################################################################################## 100.0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v16.20.2 (npm v8.19.4)
+Creating default alias: default -> 16 (-> v16.20.2)
+
+pepe@ip-172-31-39-104:~$ node --version
+v16.20.2
+```
+
+Para si te pica hacer con Docker 
+
+Si lo hicieras con docker, en docker siempre has de partir de una imagen de docker para cear mi contenedor. Lo más facil es partir de una imagen de un Linux (Ubuntu, Debian, etc). Yo para este caso del chat, tiraría de una imagen de docker que tenga node 16; la que me da oficialmente docker y listo. Yhe de tirar de python 3.7 pues lo mismo.
 
 
+**Instalamos dependencias**
+
+```sh
+pepe@ip-172-31-39-104:~$ cd node-chat/
+pepe@ip-172-31-39-104:~/node-chat$ npm i
+        npm WARN deprecated ejs@2.3.4: Critical security bugs fixed in 2.5.5
+
+        added 62 packages, and audited 63 packages in 4s
+
+        1 package is looking for funding
+        run `npm fund` for details
+
+        14 vulnerabilities (1 moderate, 12 high, 1 critical)
+
+        To address all issues (including breaking changes), run:
+        npm audit fix --force
+
+        Run `npm audit` for details.
+        npm notice 
+        npm notice New major version of npm available! 8.19.4 -> 10.4.0
+        npm notice Changelog: https://github.com/npm/cli/releases/tag/v10.4.0
+        npm notice Run npm install -g npm@10.4.0 to update!
+        npm notice 
+```
+
+segú la documentación de la página clonada
 
 
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ npm start
+
+> node-chat@1.0.7 start
+> node app.js
+
+[--:--:--][CONSOLE] [16:14:20] [Start] Listening at port 3000
+```
+
+arracado en el puerta 3000. Desberías arracar en `http://54.224.151.83:3000/` y te da error porque en las reglas del cortafuegos del otro día dijimos y abrimmos el uerto `80` y ahora hemos de abrir el puerto 3000
 
 
+![](/img/24.png)
+
+Recargas y ya tienes el chat. De hecho si comparte la direccion `http://54.224.151.83:3000/` a otra persona podrá chater contigo
 
 
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ npm start
+
+> node-chat@1.0.7 start
+> node app.js
+
+[--:--:--][CONSOLE] [17:08:23] [Start] Listening at port 3000
+(node:9312) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+        [17:08:37] [Socket] d5de2eb8-b4fa-4dc6-ad31-09d5e681f059: connected (undefined)
+        [17:08:48] [Message] [Message] Hola: Hola cimo estas?
+        [17:08:55] [Message] [Message] Hola: Muy bien y tu?
+```
+
+Hasta ahora estamos comprovando que la aplicación funciona conectándonos directamente a la aplicación del servidor. No hay ningún intermediario entre el servidor y no. Este es el paso primero que he de hacer cuando despliego una app:
+
+* La cargo al servidor y doy los pasos necesario para ver que todo funciona bien en el servidor.
+* si todo va bien, primer paso conseguido
+* a partir de ahora pondremos intermediarios entre el servidor y yo. Por ejemplo querremos que alguien esté pendiente de que no se apague nunca la app; y este es al caso del `gestor de procesos` con https://pm2.io/
 
 
+**Usamos PM2 como gestor de procesos**
+
+https://pm2.io/docs/plus/overview/
+
+```sh
+npm install pm2 -g # l -g es para que lo instale global
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ npm install pm2 -g
+        npm WARN deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+
+        added 163 packages, and audited 164 packages in 8s
+
+        13 packages are looking for funding
+        run `npm fund` for details
+
+        5 high severity vulnerabilities
+
+        To address all issues (including breaking changes), run:
+        npm audit fix --force
+
+        Run `npm audit` for details.
 
 
+pepe@ip-172-31-39-104:~$ pm2 -version
 
+                        -------------
+
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+        _\///______________\///______________\///__\///////////////__
+
+
+                          Runtime Edition
+
+        PM2 is a Production Process Manager for Node.js applications
+                     with a built-in Load Balancer.
+
+                Start and Daemonize any application:
+                $ pm2 start app.js
+
+                Load Balance 4 instances of api.js:
+                $ pm2 start api.js -i 4
+
+                Monitor in production:
+                $ pm2 monitor
+
+                Make pm2 auto-boot at server restart:
+                $ pm2 startup
+
+                To go further checkout:
+                http://pm2.io/
+
+
+                        -------------
+
+[PM2] Spawning PM2 daemon with pm2_home=/home/pepe/.pm2
+[PM2] PM2 Successfully daemonized
+5.3.1
+```
+
+Se ha arrancado pome demonizado
+
+
+```sh
+pepe@ip-172-31-39-104:~$ ps aux | grep pm2
+    pepe       11005  0.6  4.8 628376 46720 ?        Ssl  07:00   0:00 PM2 v5.3.1: God Daemon (/home/pepe/.pm2)
+    pepe       11017  0.0  0.2   7008  2304 pts/1    S+   07:00   0:00 grep --color=auto pm2
+```
+
+¿Cómo le decimos que vigile esta app? https://pm2.keymetrics.io/docs/usage/pm2-doc-single-page/
+
+* diciéndole el archivo js que quiero que arranque ¿como ued saber qué archivo arranca el chat?
+* 
+```sh
+pepe@ip-172-31-39-104:~$ ls -l
+total 36
+        -rw------- 1 pepe pepe  214 Feb 11 19:28 .bash_history
+        -rw-r--r-- 1 pepe pepe  220 Feb 11 15:32 .bash_logout
+        -rw-r--r-- 1 pepe pepe 3968 Feb 11 15:51 .bashrc
+        drwx------ 3 pepe pepe 4096 Feb 11 15:39 .config
+        drwxrwxr-x 4 pepe pepe 4096 Feb 11 16:12 .npm
+        drwxrwxr-x 8 pepe pepe 4096 Feb 11 16:07 .nvm
+        drwxrwxr-x 5 pepe pepe 4096 Feb 12 07:00 .pm2
+        -rw-r--r-- 1 pepe pepe  807 Feb 11 15:32 .profile
+        drwxrwxr-x 7 pepe pepe 4096 Feb 11 16:12 node-chat
+pepe@ip-172-31-39-104:~$ cd node-chat/
+pepe@ip-172-31-39-104:~/node-chat$ cat package.json
+        {
+        "name": "node-chat",
+        "version": "1.0.7",
+        "private": true,
+        "scripts": {
+            "start": "node app.js" # <----------- NOS LO DICE
+        },
+        "dependencies": {
+            "debug": "~2.1.1",
+            "ejs": "~2.3.1",
+            "express": "~4.12.2",
+            "readline": "0.0.7",
+            "serve-favicon": "~2.2.0",
+            "sockjs": "~0.3.15",
+            "chalk": "~1.0.0",
+            "underscore.string": "~3.0.3"
+        }
+        }
+```
+
+instalamos con el archivo
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ pm2 start app.js  # estando en la carpeta que toca
+            [PM2] Starting /home/pepe/node-chat/app.js in fork_mode (1 instance)
+            [PM2] Done.
+            ┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+            │ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+            ├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+            │ 0  │ app                │ fork     │ 0    │ online    │ 0%       │ 31.9mb   │
+            └────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+```
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ pm2 list # me dice qué está cuidando
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ app                │ fork     │ 0    │ online    │ 0%       │ 50.4mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+```
+
+Si quieres ver todos los datos del proceso que está cuidando
+
+```sh
+pm2 show 0 # este cero es el id
+
+        Describing process with id 0 - name app 
+        ┌───────────────────┬────────────────────────────────────┐
+        │ status            │ online                             │
+        │ name              │ app                                │
+        │ namespace         │ default                            │
+        │ version           │ 1.0.7                              │
+        │ restarts          │ 0                                  │
+        │ uptime            │ 5m                                 │
+        │ script path       │ /home/pepe/node-chat/app.js        │
+        │ script args       │ N/A                                │
+        │ error log path    │ /home/pepe/.pm2/logs/app-error.log │
+        │ out log path      │ /home/pepe/.pm2/logs/app-out.log   │
+        │ pid path          │ /home/pepe/.pm2/pids/app-0.pid     │
+        │ interpreter       │ node                               │
+        │ interpreter args  │ N/A                                │
+        │ script id         │ 0                                  │
+        │ exec cwd          │ /home/pepe/node-chat               │
+        │ exec mode         │ fork_mode                          │
+        │ node.js version   │ 16.20.2                            │
+        │ node env          │ N/A                                │
+        │ watch & reload    │ ✘                                  │
+        │ unstable restarts │ 0                                  │
+        │ created at        │ 2024-02-12T07:06:46.497Z           │
+        └───────────────────┴────────────────────────────────────┘
+        Revision control metadata 
+        ┌──────────────────┬────────────────────────────────────────────────────┐
+        │ revision control │ git                                                │
+        │ remote url       │ https://github.com/alexjust-data/node-chat.git     │
+        │ repository root  │ /home/pepe/node-chat                               │
+        │ last update      │ 2024-02-12T07:06:46.749Z                           │
+        │ revision         │ 69bc2974b4ec937e43e88f82519f909ae12315c2           │
+        │ comment          │ Merge pull request #51 from victoriaquasar/patch-1 │
+        │ branch           │ master                                             │
+        └──────────────────┴────────────────────────────────────────────────────┘
+        Actions available 
+        ┌────────────────────────┐
+        │ km:heapdump            │
+        │ km:cpu:profiling:start │
+        │ km:cpu:profiling:stop  │
+        │ km:heap:sampling:start │
+        │ km:heap:sampling:stop  │
+        └────────────────────────┘
+        Trigger via: pm2 trigger app <action_name>
+
+        Code metrics value 
+        ┌────────────────────────┬───────────┐
+        │ Used Heap Size         │ 9.98 MiB  │
+        │ Heap Usage             │ 83.92 %   │
+        │ Heap Size              │ 11.89 MiB │
+        │ Event Loop Latency p95 │ 1.18 ms   │
+        │ Event Loop Latency     │ 0.33 ms   │
+        │ Active handles         │ 5         │
+        │ Active requests        │ 0         │
+        └────────────────────────┴───────────┘
+        Divergent env variables from local env 
+
+
+        Add your own code metrics: http://bit.ly/code-metrics
+        Use `pm2 logs app [--lines 1000]` to display logs
+        Use `pm2 env 0` to display environment variables
+        Use `pm2 monit` to monitor CPU and Memory usage app
+``` 
+
+También puedes verlo a través de 
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ ps aux | grep chat
+    pepe       11034  0.5  5.3 631784 52172 ?        Ssl  07:06   0:00 node /home/pepe/node-chat/app.js # aquí también
+    pepe       11062  0.0  0.2   7008  2304 pts/1    S+   07:08   0:00 grep --color=auto chat
+```
+¿qué pid tiene el proceso? `11034`
+¿quien ejecuta este proceso? `pepe`     
+
+¿Cual es la razon de exister este gestor de procesos? una de ellas que nunca miriera la app. Matemos la aplicacion.
+
+```sh
+kill 11034
+``` 
+
+si te vas a chatear `http://54.224.151.83:3000/`, la app sigue funcionando.
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ ps aux | grep chat
+    pepe       11124  0.5  5.5 633196 53952 ?        Ssl  07:20   0:00 node /home/pepe/node-chat/app.js
+    pepe       11140  0.0  0.2   7008  2304 pts/1    S+   07:21   0:00 grep --color=auto chat
+```
+
+Sigue con otra `pid:11124` lo han resucitado
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ app                │ fork     │ 1    │ online    │ 0%       │ 52.7mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+```
+
+Esto `↺ : 1` significa que lo han patado una vez, y así sucesibamente.
+
+Imagínate que cuaquier día por lanoche el servidor se reconfigura solo y se reinicia ¿seguirá el chat?
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ logout
+ubuntu@ip-172-31-39-104:~$ sudo reboot
+ubuntu@ip-172-31-39-104:~$ Connection to 54.224.151.83 closed by remote host.
+        Connection to 54.224.151.83 closed.
+```
+
+Cuando tu arrancas algo generalmente no se arrranca solo.
+
+Si te vas a la IP funciona nginx
+
+![](img/25.png)
+
+Si te vas a las DNS funciona nginx
+
+![](img/26.png)
+
+No está funcionando el puerto 3000
+
+![](img/27.png)
+
+
+conectamos con el servidor y miramos si hay algún proceso abierto de `pm2` y no hay ninguno
+
+```sh
+ubuntu@ip-172-31-39-104:~$ ps aux | grep pm2
+ubuntu       793  0.0  0.2   7008  2304 pts/0    S+   07:30   0:00 grep --color=auto pm2
+``` 
+
+Algo hemos de hacer para que se arranque con el servidor.
+
+
+https://www.digitalocean.com/community/tutorials
+
+La gúia está muy bien para configurar servidores y cositas
+
+
+https://www.digitalocean.com/community/tutorials/how-to-use-pm2-to-setup-a-node-js-production-environment-on-an-ubuntu-vps#run-your-app-using-pm2-and-ensure-that-your-node-js-application-starts-automatically-when-your-server-restarts
+
+Run this command to run your application as a service by typing the following:
+
+```sh
+
+```
+
+No puedo ejecutar ``pm2` con usuario ubuntu
+
+```sh
+ubuntu@ip-172-31-39-104:~$ pm2
+        Command 'pm2' not found, did you mean:
+        command 'pmi' from deb powermanagement-interface (0.3.21)
+        command 'gm2' from deb gm2 (4:11.2.0-1ubuntu1)
+        command 'wm2' from deb wm2 (4+svn20090216-4build1)
+        command 'pmw' from deb pmw (1:4.50-1)
+        command 'pms' from deb pms (0.42-1build4)
+        command 'tpm2' from deb tpm2-tools (5.2-1build1)
+        command 'pmg' from deb python3-pymatgen (2022.0.17+dfsg1-1build1)
+        command 'pom2' from deb libpod-pom-perl (2.01-3)
+        command 'pmc' from deb linuxptp (3.1.1-3)
+        command 'pm' from deb powerman (2.3.5-1build2)
+        Try: sudo apt install <deb name>
+
+pepe@ip-172-31-39-104:~$ pm2
+        usage: pm2 [options] <command>
+
+        pm2 -h, --help             all available commands and options
+        pm2 examples               display pm2 usage examples
+        pm2 <command> -h           help on a specific command
+
+        Access pm2 files in ~/.pm2
+```
+
+Estamos instalando nvm sólo para el usuario `pepe` como hemos instaldo `pm2`? ` npm install pm2 -g` entonces, si sólo `npm` está instalado en el usuario `pepe` entonces `pm2` solo se ha instaldo para `pepe`
+
+De ehcho fíjate donde está instalado `/home/pepe/`
+```sh
+pepe@ip-172-31-39-104:~$ which pm2
+        /home/pepe/.nvm/versions/node/v16.20.2/bin/pm2
+```
 
 
 
