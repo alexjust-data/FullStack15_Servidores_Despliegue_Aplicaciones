@@ -10,7 +10,11 @@ Iniciamos con el video **1.mp4**
 * `Ctrl+r` : es un buscador de comandos antiguos, has de decirle las palabras que quieres buscar
 * `sudo !!` : cuando te olvidas poner sudo en el comando, esto te permite ejecutar ell mismo comando que antes con sudo delante
 
+---
+
 ![](img/1.png)
+
+---
 
 ```sh
 Despliegue_AWS ls
@@ -234,9 +238,14 @@ https://www.tecmint.com/35-practical-examples-of-linux-find-command/
    - Usuarios del mismo grupo del archivo o carpeta
    - Otros usuarios fuera del grupo
 
+---
 ![](img/2.png)
 
+---
 ![](img/4.png)
+
+---
+
 
 **Modificar permisos de archivos y carpeta**
 
@@ -527,12 +536,18 @@ El cron
 
 * **crontab -e** : 
 
+---
+
 ![](img/5.png)
+
+---
 
 * **sudo nano /etc/crontab** : Programando tareas de sistema
 
-
+---
 ![](img/6.png)
+
+---
 
 
 **Ejemplo crontab -e**
@@ -640,7 +655,10 @@ Te está diciendo que reinicará todos estos archivos, le das al tabulador para 
 
 Ahora vamos a reinicar desde la consola de aws
 
+---
 ![](/img/7.png)
+
+---
 
 o desde la consola 
 
@@ -688,6 +706,8 @@ ubuntu@ip-172-31-39-104:~$
 
 Hemos de configurar el cortafuegos
 
+---
+
 ![](/img/8.png)
 
 ---
@@ -697,6 +717,8 @@ Hemos de configurar el cortafuegos
 ---
 
 Incluimos el puerto de acceso HTTP con dns 0.0.0.0. para que pueda acceder todo el mundo, si quieres puedes decirle que solo puede acceder una direccion particular.
+
+---
 ![](/img/10.png)
 
 
@@ -1024,7 +1046,10 @@ El archivo está vacío
 
 pero lo escribimos un **hola mundo** y guardamos
 
+---
 ![](/img/12.png)
+
+---
 
 Vamos a https://startbootstrap.com/
 copiamos una plantilla
@@ -1144,7 +1169,10 @@ React sirve para hacer una SPA single page aplication. No hay gran diferencia en
 
 Vamos a desplegar la típica aplicacion de to do
 
+---
 ![](/img/13.png)
+
+---
 
 **Descargamos el código y compilamos la aplicacion de React**
 
@@ -1255,12 +1283,13 @@ Lo que acabamos de hacer para construir la aplicacion de react es lo mismo que h
 
 Te ha construido una carpeta `build`
 
+---
 ![](/img/14.png)
 
 ---
 
 > [!IMPORTANT]
-> Truco impresionanteque hace poco que funciona
+> Truco impresionante, hace poco que funciona, crearás un contendor Docker rápido
 
 ---
 
@@ -2946,6 +2975,837 @@ Borrando ...
 ![](/img/33.png)
 
 ---
+
+
+
+
+## CASO 2 con base de datos, necesitamos instalar mongoDB
+---
+
+https://parseplatform.org/
+
+
+Parse es el anterior Firebase. Ponte en la piel de que eres un desarollador mobil que no tienes ni idea de backen ni base de datos y has aprendido hacer app para IOS y Android y necesitas una app que tenga persistencia entre dispositivos. 
+
+Apareció Parse (Sparrest pero bien montado). Te creas una cuenta en Parse y llamas a las Apis para guardar objetos y te da una serie de apis para más cosas
+gistionar usiarios, logins, gestionar envío de notificaciones, etc. Lo compró Facebook y como no daba dinero lo cerró. Muchos desarrolladores adquirieron una `deuda técnica` con parse y lo usaban como backen, cuando cerró se quedaron colgados. Facebook liberó el codigo fuente.
+
+
+> [!NOTE]  
+> Vamos a desplegar  
+>  **Parse Server and Dashboard**  The REST server and dashboard to manage your data.   
+>  https://github.com/parse-community/parse-server-example
+
+¿como funciona? Parecido a Sparrest . PARSE básicamente tiene una REST API
+
+REST API
+
+Save object:
+```sh
+curl -X POST \ 
+  -H "X-Parse-Application-Id: YOUR_APP_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"score":1337}' \
+  http://localhost:1337/parse/classes/GameScore
+```
+
+* curl -X POST \  # peticion post
+* -H "X-Parse-Application-Id: YOUR_APP_ID" \  # le pasas una cabecera personalizada
+* -H "Content-Type: application/json" \
+* -d '{"score":1337}' \ # mandas un json
+* http://localhost:1337/parse/classes/GameScore # lo envias a la url esta
+
+
+**INSTALANDO MONGOBD en el servidor**
+
+https://hub.docker.com/_/mongo/tags
+
+
+Mongo tiene una forma muy sencilla de elegir la version que quieras 
+
+---
+![](/img/34.png)
+
+---
+
+Pero nosotros ahora vamos a la pagina oficial 
+
+**Install MongoDB Community Edition**
+
+https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#install-mongodb-community-edition
+
+---
+![](/img/35.png)
+
+---
+
+Como cuando yo hago un `sudo apt install mongo` ubuntu no me da la versión que yo quiero, lo que hará es darle la capacidad a `apt` para que de los paquetes que yo pueda instalar, me instale directamente lo que me da MongoBd. Para hacer esto lo primero es descargarme la clave pública; y [en este caso](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#install-mongodb-community-edition) MongoBd te está dando su caja con el cerrojo abierto para que te comuniques con él:
+
+```sh
+curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
+   sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg \
+   --dearmor
+```
+
+**1er paso : [Import the public key used by the package management system](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#import-the-public-key-used-by-the-package-management-system)**
+
+```sh
+# conecto con el servidor
+➜  react-redux-todo-app git:(master) ✗ ssh -i ../Despliegue_AWS/web15.pem ubuntu@54.224.151.83
+
+# instalo según instrucciones mongo
+ubuntu@ip-172-31-39-104:~$ sudo apt-get install gnupg curl
+
+# importo clave pública
+curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
+   sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg \
+   --dearmor
+```
+
+**2º paso : [Create a list file for MongoDB](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#create-a-list-file-for-mongodb)**
+
+```sh
+# copiando los paquetes de mongo en el archivo para instalarlo
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+```
+
+**3º paso : [Reload local package database](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#reload-local-package-database)**
+
+```sh
+# recarga base de datos del paquete, actualiza
+sudo apt-get update
+```
+
+**4to paso : [Install the MongoDB packages](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#install-the-mongodb-packages)**
+
+```sh
+# instalando mongo
+sudo apt-get install -y mongodb-org
+```
+
+**Run MongoDB** Nos leeríamos [lo siguiente](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-ubuntu/#run-mongodb-community-edition)
+
+**1º Start MongoDB**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl start mongod
+```
+
+**2º Verify that MongoDB has started successfully.**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl status mongod # para saber si está trabajando
+● mongod.service - MongoDB Database Server
+     Loaded: loaded (/lib/systemd/system/mongod.service; disabled; vendor preset: enabled)
+     Active: active (running) since Tue 2024-02-13 15:16:08 UTC; 28s ago
+       Docs: https://docs.mongodb.org/manual
+   Main PID: 3755 (mongod)
+     Memory: 156.9M
+        CPU: 976ms
+     CGroup: /system.slice/mongod.service
+             └─3755 /usr/bin/mongod --config /etc/mongod.conf
+
+Feb 13 15:16:08 ip-172-31-39-104 systemd[1]: Started MongoDB Database Server.
+Feb 13 15:16:09 ip-172-31-39-104 mongod[3755]: {"t":{"$date":"2024-02-13T15:16:09.773Z"},"s":"I",  "c":"CONTROL",  "id":7484500, ">
+lines 1-12/12 (END)
+```
+
+```sh
+# podemos ver si corre por aquí también
+ubuntu@ip-172-31-39-104:~$ ps aux |grep mongo
+mongodb     3755  1.8 15.4 2632072 150528 ?      Ssl  15:16   0:01 /usr/bin/mongod --config /etc/mongod.conf
+ubuntu      3801  0.0  0.2   7008  2304 pts/0    S+   15:17   0:00 grep --color=auto mongo
+```
+
+**Evita la configuración relajada** (lo instalas funciona y te olvidas)
+
+
+```sh
+# este comando nos permite trabajar en mongo
+ubuntu@ip-172-31-39-104:~$ mongosh
+
+Current Mongosh Log ID:	65cb8902e04615ce7e952fce
+Connecting to:		mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.4
+Using MongoDB:		7.0.5
+Using Mongosh:		2.1.4
+
+For mongosh info see: https://docs.mongodb.com/mongodb-shell/
+
+
+To help improve our products, anonymous usage data is collected and sent to MongoDB periodically (https://www.mongodb.com/legal/privacy-policy).
+You can opt-out by running the disableTelemetry() command.
+
+------
+   The server generated these startup warnings when booting
+   2024-02-13T15:16:10.099+00:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+   2024-02-13T15:16:10.904+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+   2024-02-13T15:16:10.904+00:00: vm.max_map_count is too low
+------
+
+# trabajando en mongo
+
+test> show databases
+
+        admin   40.00 KiB
+        config  12.00 KiB
+        local   40.00 KiB
+
+test> exit
+```
+
+**Instalando PARSE**
+
+**1º descargando el repo**
+
+```sh
+# cambiamos usuario
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+# la letra parse final es para que se llame así la carpeta
+pepe@ip-172-31-39-104:~$ git clone https://github.com/parse-community/parse-server-example.git parse
+        Cloning into 'parse'...
+        remote: Enumerating objects: 542, done.
+        remote: Counting objects: 100% (83/83), done.
+        remote: Compressing objects: 100% (52/52), done.
+        remote: Total 542 (delta 46), reused 62 (delta 27), pack-reused 459
+        Receiving objects: 100% (542/542), 537.39 KiB | 12.50 MiB/s, done.
+        Resolving deltas: 100% (234/234), done.
+# viendo la descarga
+pepe@ip-172-31-39-104:~$ ls -l
+        total 8
+        drwxrwxr-x 7 pepe pepe 4096 Feb 11 16:12 node-chat
+        drwxrwxr-x 9 pepe pepe 4096 Feb 13 15:26 parse
+```
+
+Parse funciona con la versión 8 de node, es decir que hemos de instalar 
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ nvm install 18
+        Downloading and installing node v18.19.0...
+        Downloading https://nodejs.org/dist/v18.19.0/node-v18.19.0-linux-x64.tar.xz...
+        ############################################################################################################################ 100.0%
+        Computing checksum with sha256sum
+        Checksums matched!
+        Now using node v18.19.0 (npm v10.2.3)
+pepe@ip-172-31-39-104:~/parse$ node --version
+v18.19.0
+```
+
+**Instalamos dependecias para Parse**
+
+```sh
+# instalamos dependencias
+pepe@ip-172-31-39-104:~/parse$ npm install
+
+        added 1133 packages, and audited 1396 packages in 25s
+        139 packages are looking for funding
+        run `npm fund` for details
+        34 vulnerabilities (1 low, 20 moderate, 8 high, 5 critical)
+        To address issues that do not require attention, run:
+        npm audit fix
+        To address all issues (including breaking changes), run:
+        npm audit fix --force
+        Run `npm audit` for details.
+
+
+# arrancamos
+pepe@ip-172-31-39-104:~/parse$ npm start
+
+> parse-server-example@1.2.3 start
+> node index.js
+
+warn: DeprecationWarning: The Parse Server option 'allowClientClassCreation' default will change to 'false' in a future version.
+warn: DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.
+warn: DeprecationWarning: The Parse Server option 'encodeParseObjectInCloudFunction' default will change to 'true' in a future version.
+
+parse-server-example running on port 1337. # fíjate en que puerto , ábrelo
+info: Parse LiveQuery Server started running
+```
+---
+
+
+> [!NOTE] 
+> Como cliente REST vamos a utilizar una extensión de VSC que se llama **Thunder Client** pero vamos es como POSTMAN o otro cualquiera
+> Instala la extensión y has una petición `GET`
+
+---
+
+Si llamas al puerto te dará error porque no hemos puesto las cabeceras
+
+--
+![](/img/37.png)
+--
+
+Las cabeceras que comienzn con `X` son personalizadas puedes poner despues lo que te de la gana
+
+Acuérdate de la docuemntación de Parse que te decía
+```sh
+curl -X POST \ 
+  -H "X-Parse-Application-Id: YOUR_APP_ID" \
+  -H "Content-Type: application/json" \
+  -d '{"score":1337}' \
+  http://localhost:1337/parse/classes/GameScore
+```
+
+* -H "X-Parse-Application-Id: YOUR_APP_ID" \  # le pasas una cabecera personalizada
+
+Ahora e da un 404 poruqe haces petición de algo que no existe
+
+---
+![](/img/38.png)
+
+---
+¿de qué quieres la app, de cervezas???
+
+---
+![](/img/39.png)
+
+--- 
+
+NO hay cerveces, vamos crearlas
+
+---
+![](/img/40.png)
+
+--- 
+
+Hacemos un GET (acuerdate de quitar los json del body)
+
+
+---
+![](/img/41.png)
+
+--- 
+
+Coje el id de la cerveza alhambra y cambia la nota
+
+---
+![](/img/42.png)
+
+--- 
+
+---
+![](/img/43.png)
+
+--- 
+
+
+**¿Y todo esto donde se está guardando?**
+
+Vayamos a mongo a mirar
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ mongosh
+Current Mongosh Log ID:	65cb9d55e9696be5a60e84aa
+Connecting to:		mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.4
+Using MongoDB:		7.0.5
+Using Mongosh:		2.1.4
+
+For mongosh info see: https://docs.mongodb.com/mongodb-shell/
+
+
+To help improve our products, anonymous usage data is collected and sent to MongoDB periodically (https://www.mongodb.com/legal/privacy-policy).
+You can opt-out by running the disableTelemetry() command.
+
+------
+   The server generated these startup warnings when booting
+   2024-02-13T15:16:10.099+00:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+   2024-02-13T15:16:10.904+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+   2024-02-13T15:16:10.904+00:00: vm.max_map_count is too low
+------
+
+test> show databases
+admin    40.00 KiB
+config  108.00 KiB
+dev     196.00 KiB
+local    40.00 KiB
+
+test> use dev
+switched to db dev
+
+dev> show collections
+_Idempotency
+_Role
+_SCHEMA
+_User
+Cervezas
+dev> db.Cervezas.find({})
+[
+  {
+    _id: 'ceqNIgCA5M',
+    nombre: 'Estrella Galicia',
+    puntuacion: 9.5,
+    _created_at: ISODate('2024-02-13T16:40:19.365Z'),
+    _updated_at: ISODate('2024-02-13T16:40:19.365Z')
+  },
+  {
+    _id: 'E09UEHNE1t',
+    nombre: 'Mahou',
+    puntuacion: 9,
+    _created_at: ISODate('2024-02-13T16:41:16.231Z'),
+    _updated_at: ISODate('2024-02-13T16:41:16.231Z')
+  },
+  {
+    _id: '7P1HmwAXHy',
+    nombre: 'Alhambra',
+    puntuacion: 10,
+    _created_at: ISODate('2024-02-13T16:41:28.820Z'),
+    _updated_at: ISODate('2024-02-13T16:45:36.992Z')
+  }
+]
+dev> 
+```
+---
+> [!IMPORTANT]
+> Todo va bien.... peligro.... qué huele mal?
+> Con el usuario Pepe para ver lo que hay dentro de la base de datos de PArse ¿Hemos puesto alguna contraseña?  
+> Todo ha funcionado automágicamente. Si alguien entra en el servidor puede acceder a los datos de ala pp perfectamente.
+---
+
+
+Hemos instalado un **configuración relajada**.  Peligro. Problemas de seguridad
+Entonces, si nos hubieramos dado cuenta antes de esto ¿cuál era el paso anterior? 
+* usar pm2 
+* nginx por delante
+
+---
+> [!IMPORTANT]
+> Siempre la BBDD debe tener ocntraseña y usuario
+--- 
+
+**Mongo [Security Checklist](https://www.mongodb.com/docs/manual/administration/security-checklist/#security-checklist)**
+
+
+---
+![](/img/44.png)
+
+--- 
+
+  
+
+https://www.mongodb.com/docs/manual/tutorial/configure-scram-client-authentication/
+  
+
+**[3. Create the user administrator](https://www.mongodb.com/docs/manual/tutorial/configure-scram-client-authentication/#create-the-user-administrator)**
+
+```sh
+use admin
+db.createUser(
+  {
+    user: "batman",
+    pwd: "6y1axb",
+    roles: [
+      { role: "userAdminAnyDatabase", db: "admin" },
+      { role: "readWriteAnyDatabase", db: "admin" }
+    ]
+  }
+)
+```
+
+Me conecto a mongo y le doy los datos
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ mongosh
+
+Current Mongosh Log ID:	65cba2159a21efaa89194355
+Connecting to:		mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.1.4
+Using MongoDB:		7.0.5
+Using Mongosh:		2.1.4
+
+For mongosh info see: https://docs.mongodb.com/mongodb-shell/
+
+------
+   The server generated these startup warnings when booting
+   2024-02-13T15:16:10.099+00:00: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+   2024-02-13T15:16:10.904+00:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+   2024-02-13T15:16:10.904+00:00: vm.max_map_count is too low
+------
+
+test> use admin
+switched to db admin
+admin> db.createUser(
+...   {
+...     user: "batman",
+...     pwd: "6y1axb",
+...     roles: [
+...       { role: "userAdminAnyDatabase", db: "admin" },
+...       { role: "readWriteAnyDatabase", db: "admin" }
+...     ]
+...   }
+... )
+{ ok: 1 }
+admin> 
+```
+
+**[4. Re-start the MongoDB instance with access control](https://www.mongodb.com/docs/manual/tutorial/configure-scram-client-authentication/#re-start-the-mongodb-instance-with-access-control)**
+
+```sh
+# hemos de añadir al fichero de configuracin esta linea
+ security:
+    authorization: enabled
+```
+
+¿donde crees que stará en el fichero de configuracion de mongo?
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ logout
+ubuntu@ip-172-31-39-104:~$ sudo nano /etc/mongod.conf
+
+
+# mongod.conf
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+# Where and how to store data.
+storage:
+  dbPath: /var/lib/mongodb
+#  engine:
+#  wiredTiger:
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+# network interfaces
+net:
+  port: 27017
+  bindIp: 127.0.0.1
+# how the process runs
+processManagement:
+  timeZoneInfo: /usr/share/zoneinfo
+
+#security:
+security:
+    authorization: enabled
+
+#operationProfiling:
+#replication:
+#sharding:
+## Enterprise-Only Options:
+#auditLog:
+```
+
+**Reiniciamos mongo y confirmamos**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl restart mongod
+ubuntu@ip-172-31-39-104:~$ sudo systemctl status mongod
+
+● mongod.service - MongoDB Database Server
+     Loaded: loaded (/lib/systemd/system/mongod.service; disabled; vendor preset: enabled)
+     Active: active (running) since Tue 2024-02-13 17:15:27 UTC; 11s ago
+       Docs: https://docs.mongodb.org/manual
+   Main PID: 5989 (mongod)
+     Memory: 200.1M
+        CPU: 1.239s
+     CGroup: /system.slice/mongod.service
+             └─5989 /usr/bin/mongod --config /etc/mongod.conf
+
+Feb 13 17:15:27 ip-172-31-39-104 systemd[1]: Stopped MongoDB Database Server.
+Feb 13 17:15:27 ip-172-31-39-104 systemd[1]: mongod.service: Consumed 33.067s CPU time.
+Feb 13 17:15:27 ip-172-31-39-104 systemd[1]: Started MongoDB Database Server.
+Feb 13 17:15:28 ip-172-31-39-104 mongod[5989]: {"t":{"$date":"2024-02-13T17:15:28.101Z"},"s":"I",  "c":"CONTROL",  "id":7484500, ">
+lines 1-14/14 (END)
+```
+
+**[5. Connect and authenticate as the user administrator](https://www.mongodb.com/docs/manual/tutorial/configure-scram-client-authentication/#connect-and-authenticate-as-the-user-administrator)**
+
+Autentíficate como admin
+
+```sh
+mongosh --port 27017  --authenticationDatabase \
+    "admin" -u "myUserAdmin" -p
+```
+
+vamos a ello...
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ mongosh --authenticationDatabase admin -u batman -p
+Enter password: ******
+
+Current Mongosh Log ID:	65cba48af7e9e6ce1b279ca0
+Connecting to:		mongodb://<credentials>@127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&authSource=admin&appName=mongosh+2.1.4
+Using MongoDB:		7.0.5
+Using Mongosh:		2.1.4
+
+For mongosh info see: https://docs.mongodb.com/mongodb-shell/
+
+test> show databases
+admin   132.00 KiB
+config  108.00 KiB
+dev     196.00 KiB
+local    72.00 KiB
+test> 
+```
+
+**Cada app debe tener acceso a su base de datos de mongo**
+
+puedo tener 15 apps y cada una ha de acceder a su base de datos dentro de mongo.
+
+> [!IMPORTANT]
+> Cada app debe tener 
+> * su propia base de datos
+> * su propio usuario de la BBDD
+> Cada una un usuario independiente.
+--- 
+
+**Creando usuario para Parse ~ [Users](https://www.mongodb.com/docs/manual/tutorial/create-users/#configure-users-for-self-hosted-deployments)**
+
+**[1 Connect and authenticate](https://www.mongodb.com/docs/manual/tutorial/create-users/#connect-and-authenticate)**
+
+```sh
+mongosh --port 27017  --authenticationDatabase \
+    "admin" -u "myUserAdmin" -p
+```
+
+**[2 Create additional users for your deployment](https://www.mongodb.com/docs/manual/tutorial/create-users/#create-additional-users-for-your-deployment)** 
+
+```sh
+# plantilla
+use test
+db.createUser(
+  {
+    user: "myTester",
+    pwd:  passwordPrompt(),   // or cleartext password
+    roles: [ { role: "readWrite", db: "test" },
+             { role: "read", db: "reporting" } ]
+  }
+)
+```
+
+```sh
+# en el servidor
+use parsedb
+db.createUser(
+  {
+    user: "axempleparse",
+    pwd:  "axempleparse",
+    roles: [ { role: "readWrite", db: "parsedb" }]
+  }
+)
+```
+
+```sh
+# me conecto como admin
+ubuntu@ip-172-31-39-104:~$ mongosh --authenticationDatabase admin -u batman -p
+Enter password: ******
+Current Mongosh Log ID:	65cba7587a97ad3102dda205
+Connecting to:		mongodb://<credentials>@127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&authSource=admin&appName=mongosh+2.1.4
+Using MongoDB:		7.0.5
+Using Mongosh:		2.1.4
+
+For mongosh info see: https://docs.mongodb.com/mongodb-shell/
+
+# muestro bases de datos existentes
+test> show databases
+admin   132.00 KiB
+config  108.00 KiB
+dev     196.00 KiB
+local    72.00 KiB
+
+# creo BBDD de parse
+test> use parsedb
+
+# creo contraseñas y user para parse
+parsedb> db.createUser(
+...   {
+...     user: "axempleparse",
+...     pwd:  "axempleparse",
+...    roles: [ { role: "readWrite", db: "parsedb" }]
+...   }
+... )
+{ ok: 1 }
+parsedb> 
+
+parsedb> exit
+ubuntu@ip-172-31-39-104:~$ 
+```
+---
+> [!IMPORTANT]
+> Has creado credenciales  
+> Prueba que funciona antes de configurar cualquier cosa en Parse
+--- 
+
+```sh
+# comprobando autentificacion
+ubuntu@ip-172-31-39-104:~$ mongosh --authenticationDatabase parsedb -u axempleparse -p
+Enter password: ************
+Current Mongosh Log ID:	65cba8e65a3940b28780b644
+Connecting to:		mongodb://<credentials>@127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&authSource=parsedb&appName=mongosh+2.1.4
+Using MongoDB:		7.0.5
+Using Mongosh:		2.1.4
+
+For mongosh info see: https://docs.mongodb.com/mongodb-shell/
+
+# compruebo si tiene acceso a cosas
+test> show databases
+
+# en dev teníamos las bbdd de las cervezas
+test> use dev
+switched to db dev
+dev> show collections
+MongoServerError[Unauthorized]: not authorized on dev to execute command { listCollections: 1, filter: {}, cursor: {}, nameOnly: true, authorizedCollections: false, lsid: { id: UUID("8777c6a7-cebe-4934-8968-589e1a495803") }, $db: "dev", $readPreference: { mode: "primaryPreferred" } }
+dev> 
+
+# yo sabía que había una bbdd de Cervezas
+dev> db.Cervezas.find()
+MongoServerError[Unauthorized]: not authorized on dev to execute command { find: "Cervezas", filter: {}, lsid: { id: UUID("8777c6a7-cebe-4934-8968-589e1a495803") }, $db: "dev" }
+dev> 
+
+
+switched to db parsedb
+parsedb> show collections # no me da error para ver las collections del parsedb
+
+parsedb> 
+```
+
+**Hay que decirle a la app Parse que utilice ess datos**
+
+Parse en su doc no nos dice gran cosa https://github.com/parse-community/parse-server-example
+
+Pero como sabemos un poco, el archivo `package.json`
+
+```json
+  "scripts": {
+    "coverage": "TESTING=true nyc jasmine",
+    "lint": "eslint --cache ./cloud && eslint --cache index.js && eslint --cache ./spec",
+    "lint-fix": "eslint --cache --fix ./cloud && eslint --cache --fix index.js && eslint --cache --fix ./spec",
+    "prettier": "prettier --write '{cloud,spec}/{**/*,*}.js' 'index.js'",
+    "start": "node index.js",
+```
+arranca por aquí `"start": "node index.js",`
+
+podemos ver esto
+
+```js
+export const config = {
+  databaseURI:
+    process.env.DATABASE_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/dev',
+  cloud: process.env.CLOUD_CODE_MAIN || __dirname + '/cloud/main.js',
+  appId: process.env.APP_ID || 'myAppId',
+  masterKey: process.env.MASTER_KEY || '', //Add your master key here. Keep it secret!
+  serverURL: process.env.SERVER_URL || 'http://localhost:1337/parse', // Don't forget to change to https if needed
+  liveQuery: {
+    classNames: ['Posts', 'Comments'], // List of classes to support for query subscriptions
+  },
+};
+```
+
+```js
+export const config = {
+  databaseURI:
+    process.env.DATABASE_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/dev',
+```
+
+Ya sabemos porque nos ha funcionado antes a la primera, si no existe las dos primeras toma la configuracion 'mongodb://localhost:27017/dev'.
+
+Este es el valor que le pusimos en el Header : `appId: process.env.APP_ID || 'myAppId',`
+
+---
+> [!IMPORTANT]
+> NUNCA JAMAS EN LA VIDA SE TOCA EN PRODUCCIÓN EL CODIGO DE LA APLICACION
+> Si estás tentado de colocar ahí la direccion de mongoDB y listo ..... error
+> process.env.DATABASE_URI || process.env.MONGODB_URI || `'mongodb://localhost:27017/dev'`,
+> 
+> Si lo hces estás generando una versioni diferente de codigo
+---
+
+Fíjate que Parse te permite configurar la aplicación a través de variables de entorno
+
+```js
+process.`env.DATABASE_URI` || process.`env.MONGODB_URI` || 'mongodb://localhost:27017/dev',
+```
+
+Hemos de usar la versión correcta para la apicacion
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ cd parse/
+pepe@ip-172-31-39-104:~/parse$ nvm ls
+        v8.17.0
+       v10.24.1
+->     v16.20.2
+       v18.19.0
+pepe@ip-172-31-39-104:~/parse$ nvm uninstall 8
+        Uninstalled node v8.17.0
+pepe@ip-172-31-39-104:~/parse$ nvm uninstall 10
+        Uninstalled node v10.24.1
+pepe@ip-172-31-39-104:~/parse$ nvm ls
+->     v16.20.2
+       v18.19.0
+pepe@ip-172-31-39-104:~/parse$ nvm use 18
+        Now using node v18.19.0 (npm v10.2.3)
+```
+
+Variabes de entorno ¿como puedo ver las variables de entonrno definidas en mi servidor?
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ env
+        SHELL=/bin/bash
+        NVM_INC=/home/pepe/.nvm/versions/node/v18.19.0/include/node
+        SUDO_GID=1000
+        SUDO_COMMAND=/bin/bash
+        SUDO_USER=ubuntu
+        PWD=/home/pepe/parse
+        LOGNAME=pepe
+        HOME=/home/pepe
+```
+
+¿como definimos una variable de entorno?
+
+```sh
+# como es una uri hemos de usar un protocolo de conexion (puerto de mongo 27017)
+export DATABASE_URI=mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb
+```
+
+* axempleparse:axempleparse@ -> usuario y contraseña creados antes
+* 127.0.0.1:27017/ -> localhost con puerto de mongo
+* parsedb -> base de datos que queremos conectar
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ env
+        SHELL=/bin/bash
+        NVM_INC=/home/pepe/.nvm/versions/node/v18.19.0/include/node
+        SUDO_GID=1000
+        DATABASE_URI=mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb
+```
+
+Arrancamos y debería funcionar
+
+```sh
+pepe@ip-172-31-39-104:~/parse$ npm start
+
+> parse-server-example@1.2.3 start
+> node index.js
+
+warn: DeprecationWarning: The Parse Server option 'allowClientClassCreation' default will change to 'false' in a future version.
+warn: DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.
+warn: DeprecationWarning: The Parse Server option 'encodeParseObjectInCloudFunction' default will change to 'true' in a future version.
+        parse-server-example running on port 1337.
+        info: Parse LiveQuery Server started running
+```
+
+Me conecto al puerto 1337
+
+---
+![](/img/37.png)
+
+---
+
+Se conecta y es normal que esté vacía porque lo habíamos llenado en otra base de datos, ahora es **parsedb** pero puedes crear todo de nuevo y funcionará
+Repite la creacion de cervezas como has hecho antes.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
