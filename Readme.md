@@ -3794,22 +3794,1143 @@ Me conecto al puerto 1337
 Se conecta y es normal que esté vacía porque lo habíamos llenado en otra base de datos, ahora es **parsedb** pero puedes crear todo de nuevo y funcionará
 Repite la creacion de cervezas como has hecho antes.
 
+**CHEKING**
+
+**1º probar la aplicacion directamente conectandome a ella en su puerto**
+* la app la he arrancado en su puerto y parece que funcona bien
+  
+**Hacer que la app funcione sola con pm2**
+
+> [!WARNING]
+> Si ahora te desconectas del servidor y te vuelver a conectar verás que al haver un 
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ env
+        SHELL=/bin/bash
+        NVM_INC=/home/pepe/.nvm/versions/node/v16.20.2/include/node
+        SUDO_GID=1000
+        SUDO_COMMAND=/bin/bash
+        SUDO_USER=ubuntu
+        PWD=/home/pepe
+        LOGNAME=pepe
+        HOME=/home/pepe
+        LANG=C.UTF-8
+```
+
+A crear una sesion nuevo las variables de entorno no se persisten, esto es un problema con `pm2`. Pero `pm2` lo tiene en cuenta ...
+
+La app si la ejecuto yo funciona...
+Ahora vamos a que pm2 lo haga por mi, pero como Parse el fichero .env no lo soporte hemos de meter variables de entorno. 
+
+--- 
+> [!NOTE]
+> Conjunto de buenas practicas https://12factor.net/
+> https://www.redhat.com/architect/12-factor-app 
+> Léete esto
+--- 
+
+**Configuration File**
+
+https://pm2.keymetrics.io/docs/usage/application-declaration/
+
+hemos de definir una lista de aplicacines para definir el script que se tiene que ejecutar
+
+- Generate configuration
+- Acting on Configuration File
+- Switching environments
+
+
+```sh
+pepe@ip-172-31-39-104:~$ ls -l
+total 8
+drwxrwxr-x  7 pepe pepe 4096 Feb 11 16:12 node-chat
+drwxrwxr-x 11 pepe pepe 4096 Feb 13 16:02 parse
+```
+
+```sh
+# Configuration File -> Generate configuration
+# genera un archivo nuevo
+pepe@ip-172-31-39-104:~$ pm2 init simple
+        File /home/pepe/ecosystem.config.js generated
+
+
+pepe@ip-172-31-39-104:~$ ls -l
+        total 12
+        -rw-rw-r--  1 pepe pepe   83 Feb 13 19:21 ecosystem.config.js
+        drwxrwxr-x  7 pepe pepe 4096 Feb 11 16:12 node-chat
+        drwxrwxr-x 11 pepe pepe 4096 Feb 13 16:02 parse
+```
+
+**CAMBIANDO EN EL CHAT**
+
+
+Tenemos el chat corriendo en pm2
+
+```sh
+# aplicacion es arrancadas con pm2
+pepe@ip-172-31-39-104:~$ pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ app                │ fork     │ 0    │ online    │ 0%       │ 40.1mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+# parando pm2 para app
+pepe@ip-172-31-39-104:~$ pm2 stop app
+[PM2] Applying action stopProcessId on app [app](ids: [ 0 ])
+[PM2] [app](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ app                │ fork     │ 0    │ stopped   │ 0%       │ 0b       │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+# eliminando pm2 de app
+pepe@ip-172-31-39-104:~$ pm2 delete app
+[PM2] Applying action deleteProcessId on app [app](ids: [ 0 ])
+[PM2] [app](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+
+```
+Esto es muy importante:
+`[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.`
+
+Esa lista de aplicaciones guardadas son las que pm2 va a arrancar si quieres ejecutar esa lista has de actualizarla. Si vulever arrancer pm2 arrancará ala app eliminada porque no la has sincronizado.
+
+```sh
+pepe@ip-172-31-39-104:~$ cat node-chat/package.json
+{
+  "name": "node-chat",
+  "version": "1.0.7",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "debug": "~2.1.1",
+    "ejs": "~2.3.1",
+    "express": "~4.12.2",
+    "readline": "0.0.7",
+    "serve-favicon": "~2.2.0",
+    "sockjs": "~0.3.15",
+    "chalk": "~1.0.0",
+    "underscore.string": "~3.0.3"
+  }
+}
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ pwd
+        /home/pepe
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ nano ecosystem.config.js
+
+# esto hay dentro
+# ANTES
+module.exports = {
+  apps : [{
+    name   : "app1",
+    script : "./app.js"
+  }]
+}
+
+
+# DESPUES (pinesa que estás en /home/pepe entonces has de poner la ruta crrecta "./node-chat/app.js")
+module.exports = {
+  apps : [{
+    name   : "chat",
+    script : "./node-chat/app.js"
+  }]
+}
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js 
+[PM2][WARN] Applications chat not running, starting...
+[PM2] App [chat] launched (1 instances)
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 0    │ online    │ 0%       │ 15.9mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+
+pepe@ip-172-31-39-104:~$ pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 0    │ online    │ 0%       │ 57.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ 
+```
+
+parece que arranca bien, vamos a comprobar que funciona el chat por el prouser `http://54.224.151.83/` vía ip. **¡y.. funciona!** Pero no me gusta
+
+Yo le estoy diciendo la carpeta de ejecucion de esto es el home del usuario y realmente la carpeta de ejecución debe´ria ser la carpeta de node-chat/ . Par decir cuál es la carpeta de ejecución fuerzaas en su carpeta con **cwd**
+
+[Attributes available]([Attributes available](https://pm2.keymetrics.io/docs/usage/application-declaration/)) : `cwd	(string)	“/var/www/”	the directory from which your app will be launched`
+
+
+```sh
+pepe@ip-172-31-39-104:~$ nano ecosystem.config.js
+
+# combio path
+module.exports = {
+  apps : [{
+    name   : "chat",
+    cwd    : "/home/pepe/node-chat",
+    script : "app.js"
+  }]
+}
+
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js 
+[PM2] Applying action restartProcessId on app [chat](ids: [ 0 ])
+[PM2] [chat](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 1    │ online    │ 0%       │ 16.0mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+```
+
+
+**CAMBIANDO EN PARSE**
+
+```sh
+pepe@ip-172-31-39-104:~$ ls -l
+        total 12
+        -rw-rw-r--  1 pepe pepe  208 Feb 13 19:45 ecosystem.config.js
+        drwxrwxr-x  7 pepe pepe 4096 Feb 11 16:12 node-chat
+        drwxrwxr-x 11 pepe pepe 4096 Feb 13 16:02 parse
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ cat parse/package.json
+{
+  "name": "parse-server-example",
+  "version": "1.2.3",
+  "description": "An example Parse API server using the parse-server module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ParsePlatform/parse-server-example"
+  },
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "coverage": "TESTING=true nyc jasmine",
+    "lint": "eslint --cache ./cloud && eslint --cache index.js && eslint --cache ./spec",
+    "lint-fix": "eslint --cache --fix ./cloud && eslint --cache --fix index.js && eslint --cache --fix ./spec",
+    "prettier": "prettier --write '{cloud,spec}/{**/*,*}.js' 'index.js'",
+    "start": "node index.js", # PUEDES VERLO AQUÍ
+    "test": "mongodb-runner start && TESTING=true jasmine",
+    "watch": "nodemon index.js"
+  },
+```
+
+
+```sh
+pepe@ip-172-31-39-104:~$ nano ecosystem.config.js
+
+# cambiando el archivo
+module.exports = {
+  apps : [{
+    name   : "chat",
+    cwd    : "/home/pepe/node-chat",
+    script : "app.js"
+  },    
+  {
+    name   : "parse",
+    cwd    : "/home/pepe/parse",
+    script : "index.js"
+  }  
+ ]
+}
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js 
+[PM2] Applying action restartProcessId on app [chat](ids: [ 0 ])
+[PM2] Applying action restartProcessId on app [parse](ids: [ 1 ])
+[PM2] [chat](0) ✓
+[PM2] [parse](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 5    │ online    │ 0%       │ 20.6mb   │
+│ 1  │ parse              │ fork     │ 1    │ online    │ 0%       │ 16.0mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+```
+
+Dice que funciona pero voy a comprobarlo desde el browser o VSC
+
+![](/img/46.png)
+
+Cuando algo no funciona y no sabemos porqué miramos los logs. En est caso están aquí
+
+```sh
+# aquí eston los logs para /pepe/.pm2/logs y esto es un problema
+pepe@ip-172-31-39-104:~$ la /home/pepe/.pm2/logs
+app-error.log  app-out.log  chat-error.log  chat-out.log  parse-error.log  parse-out.log
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 logs parse
+[TAILING] Tailing last 15 lines for [parse] process (change the value with --lines option)
+/home/pepe/.pm2/logs/parse-out.log last 15 lines:
+1|parse    | warn: DeprecationWarning: The Parse Server option 'allowClientClassCreation' default will change to 'false' in a future version.
+1|parse    | warn: DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.
+1|parse    | warn: DeprecationWarning: The Parse Server option 'encodeParseObjectInCloudFunction' default will change to 'true' in a future version.
+1|parse    | error: Received unauthorized error {"error":{"code":13,"codeName":"Unauthorized","ok":0}}
+1|parse    | warn: DeprecationWarning: The Parse Server option 'allowClientClassCreation' default will change to 'false' in a future version.
+1|parse    | warn: DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.
+1|parse    | warn: DeprecationWarning: The Parse Server option 'encodeParseObjectInCloudFunction' default will change to 'true' in a future version.
+1|parse    | error: Received unauthorized error {"error":{"code":13,"codeName":"Unauthorized","ok":0}}
+
+/home/pepe/.pm2/logs/parse-error.log last 15 lines:
+1|parse    |     at Connection.onMessage (/home/pepe/parse/node_modules/parse-server/node_modules/mongodb/lib/cmap/connection.js:207:30)
+1|parse    |     at MessageStream.<anonymous> (/home/pepe/parse/node_modules/parse-server/node_modules/mongodb/lib/cmap/connection.js:60:60)
+1|parse    |     at MessageStream.emit (node:events:513:28)
+1|parse    |     at processIncomingData (/home/pepe/parse/node_modules/parse-server/node_modules/mongodb/lib/cmap/message_stream.js:132:20)
+1|parse    |     at MessageStream._write (/home/pepe/parse/node_modules/parse-server/node_modules/mongodb/lib/cmap/message_stream.js:33:9)
+1|parse    |     at writeOrBuffer (node:internal/streams/writable:391:12)
+1|parse    |     at _write (node:internal/streams/writable:332:10)
+1|parse    |     at MessageStream.Writable.write (node:internal/streams/writable:336:10)
+1|parse    |     at Socket.ondata (node:internal/streams/readable:754:22)
+1|parse    |     at Socket.emit (node:events:513:28) {
+1|parse    |   ok: 0,
+1|parse    |   code: 13,
+1|parse    |   codeName: 'Unauthorized', # <----------
+1|parse    |   [Symbol(errorLabels)]: Set(0) {}
+1|parse    | }
+```
+
+En ningún momento hemos creado una varibale de entorno para configurar. [Aquí](https://pm2.keymetrics.io/docs/usage/application-declaration/) te explica como hacerlo 
+
+```sh
+pepe@ip-172-31-39-104:~$ nano ecosystem.config.js
+
+# añadiendo la variable de entorno
+module.exports = {
+  apps : [
+ {
+    name   : "chat",
+    cwd    : "/home/pepe/node-chat",
+    script : "app.js"
+  },
+  {
+    name   : "parse",
+    cwd    : "/home/pepe/parse",
+    script : "index.js",
+    env    : {"DATABASE_URI": "mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"}
+  }
+ ]
+}
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js 
+[PM2] Applying action restartProcessId on app [chat](ids: [ 0 ])
+[PM2] Applying action restartProcessId on app [parse](ids: [ 1 ])
+[PM2] [chat](0) ✓
+[PM2] [parse](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 7    │ online    │ 0%       │ 20.8mb   │
+│ 1  │ parse              │ fork     │ 3    │ online    │ 0%       │ 16.0mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+```
+
+![](/img/46.png)
+
+Sigue sin funcionar 
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 logs parse
+
+
+/home/pepe/.pm2/logs/parse-error.log last 15 lines:
+1|parse    | 
+1|parse    |     at Module.Hook._require.Module.require (/home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+1|parse    |     at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+1|parse    |     at async file:///home/pepe/parse/index.js:34:3 {
+1|parse    |   code: 'ERR_REQUIRE_ESM'
+1|parse    | }
+1|parse    | Error [ERR_REQUIRE_ESM]: require() of ES Module /home/pepe/parse/cloud/main.js from /home/pepe/parse/node_modules/parse-server/lib/ParseServer.js not supported.
+1|parse    | main.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains "type": "module" which declares all .js files in that package scope as ES modules.
+1|parse    | Instead rename main.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change "type": "module" to "type": "commonjs" in /home/pepe/parse/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).
+1|parse    | 
+1|parse    |     at Module.Hook._require.Module.require (/home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+1|parse    |     at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+1|parse    |     at async file:///home/pepe/parse/index.js:34:3 {
+1|parse    |   code: 'ERR_REQUIRE_ESM'
+1|parse    | }
+```
+
+Estamos usando versión `node/v16.20.2` pero mi app necesita node 18
+
+```sh
+pepe@ip-172-31-39-104:~$ node --version
+v16.20.2
+```
+
+El chat necesitava node 16, Parse necesita node 18. Podemos decirle a `pm2` con este comando :
+
+`interpreter	(string)	“/usr/bin/python”	interpreter absolute path (default to node)`
+
+Le podremos decir que cada uno lo haga por cada node
+
+**Buscando donde está node 18**
+
+```sh
+# le digo que ejecute la 18
+pepe@ip-172-31-39-104:~$ nvm use 18
+Now using node v18.19.0 (npm v10.2.3)
+
+# le pido la path
+pepe@ip-172-31-39-104:~$ which node
+/home/pepe/.nvm/versions/node/v18.19.0/bin/node
+```
+
+Imagínate que no has activado la 18
+
+```sh
+pepe@ip-172-31-39-104:~$ logout
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ node --version
+v16.20.2
+```
+
+¿como adivinas la path de node 18?
+
+```sh
+pepe@ip-172-31-39-104:~$ nvm which 18
+/home/pepe/.nvm/versions/node/v18.19.0/bin/node
+
+pepe@ip-172-31-39-104:~$ node --version
+v16.20.2
+```
+
+copio `/home/pepe/.nvm/versions/node/v18.19.0/bin/node`
+
+```sh
+pepe@ip-172-31-39-104:~$ nano ecosystem.config.js
+
+
+module.exports = {
+  apps : [
+ {
+    name   : "chat",
+    cwd    : "/home/pepe/node-chat",
+    script : "app.js"
+  },
+  {
+    name   : "parse",
+    cwd    : "/home/pepe/parse",
+    script : "index.js",
+    interpreter: "/home/pepe/.nvm/versions/node/v18.19.0/bin/node",
+    env    : {"DATABASE_URI": "mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"} 
+  }
+ ]
+}
+```
+
+![](/img/46.png)
+
+Sigue sin funcionar . Nos hemos aquivocado, teníamos que haber instalado `pm2` en la última versión de node.
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 logs parse
+
+
+/home/pepe/.pm2/logs/parse-error.log last 15 lines:
+1|parse    | 
+1|parse    |     at Hook._require.Module.require (/home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+1|parse    |     at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+1|parse    |     at async file:///home/pepe/parse/index.js:34:3 {
+1|parse    |   code: 'ERR_REQUIRE_ESM'
+1|parse    | }
+1|parse    | Error [ERR_REQUIRE_ESM]: require() of ES Module /home/pepe/parse/cloud/main.js from /home/pepe/parse/node_modules/parse-server/lib/ParseServer.js not supported.
+1|parse    | main.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains "type": "module" which declares all .js files in that package scope as ES modules.
+1|parse    | Instead either rename main.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change "type": "module" to "type": "commonjs" in /home/pepe/parse/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).
+1|parse    | 
+1|parse    |     at Hook._require.Module.require (/home/pepe/.nvm/versions/node/v16.20.2/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+1|parse    |     at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+1|parse    |     at async file:///home/pepe/parse/index.js:34:3 {
+1|parse    |   code: 'ERR_REQUIRE_ESM'
+1|parse    | }
+```
+
+`1|parse    | Error [ERR_REQUIRE_ESM]: require() of ES Module /home/pepe/parse/cloud/main.js from /home/pepe/parse/node_modules/parse-server/lib/ParseServer.js not supported.`
+
+Hemos de arrancar pm2 con node 18
+
+**Ojo reconfiguramos pm2 con node 21**
+```sh
+# instalndo la ultima version de node
+pepe@ip-172-31-39-104:~$ nvm install node
+Downloading and installing node v21.6.1...
+Downloading https://nodejs.org/dist/v21.6.1/node-v21.6.1-linux-x64.tar.xz...
+#########################################################################  100.0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v21.6.1 (npm v10.2.4)
+
+# la version por defecto siempre la 21
+pepe@ip-172-31-39-104:~$ nvm alias default 21
+default -> 21 (-> v21.6.1)
+
+# instalando globa pm2
+pepe@ip-172-31-39-104:~$ npm i -g pm2
+npm WARN deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+
+added 162 packages in 8s
+
+13 packages are looking for funding
+  run `npm fund` for details
+
+
+# mirando el sistema para ejecutar has de copiarlo
+pepe@ip-172-31-39-104:~$ pm2 startup
+        [PM2] Init System found: systemd
+        [PM2] To setup the Startup Script, copy/paste the following command:
+        sudo env PATH=$PATH:/home/pepe/.nvm/versions/node/v21.6.1/bin /home/pepe/.nvm/versions/node/v21.6.1/lib/node_modules/pm2/bin/pm2 startup systemd -u pepe --hp /home/pepe
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ logout
+
+ubuntu@ip-172-31-39-104:~$ sudo env PATH=$PATH:/home/pepe/.nvm/versions/node/v21.6.1/bin /home/pepe/.nvm/versions/node/v21.6.1/lib/node_modules/pm2/bin/pm2 startup systemd -u pepe --hp /home/pepe
+```
+
+```sh
+# recargo el servidor
+ubuntu@ip-172-31-39-104:~$ sudo reboot
+
+# me conecto
+➜  react-redux-todo-app git:(master) ✗ ssh -i ../Despliegue_AWS/web15.pem ubuntu@54.224.151.83
+        Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
+
+
+ubuntu@ip-172-31-39-104:~$ sudo systemctl status pm2-pepe.service
+
+● pm2-pepe.service - PM2 process manager
+     Loaded: loaded (/etc/systemd/system/pm2-pepe.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2024-02-13 20:57:37 UTC; 2min 20s ago
+       Docs: https://pm2.keymetrics.io/
+    Process: 364 ExecStart=/home/pepe/.nvm/versions/node/v21.6.1/lib/node_modules/pm2/bin/pm2 resurrect (code=exited, status=0/SUC>
+   Main PID: 576 (PM2 v5.3.1: God)
+      Tasks: 26 (limit: 1121)
+     Memory: 128.6M
+        CPU: 1.910s
+     CGroup: /system.slice/pm2-pepe.service
+             ├─576 "PM2 v5.3.1: God Daemon (/home/pepe/.pm2)" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "">
+             └─679 "node /home/pepe/node-chat/app.js" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ">
+
+Feb 13 20:57:36 ip-172-31-39-104 pm2[364]: [PM2] PM2 Successfully daemonized
+Feb 13 20:57:36 ip-172-31-39-104 pm2[364]: [PM2] Resurrecting
+Feb 13 20:57:36 ip-172-31-39-104 pm2[364]: [PM2] Restoring processes located in /home/pepe/.pm2/dump.pm2
+Feb 13 20:57:37 ip-172-31-39-104 pm2[364]: [PM2] Process /home/pepe/node-chat/app.js restored
+Feb 13 20:57:37 ip-172-31-39-104 pm2[364]: ┌────┬────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────>
+Feb 13 20:57:37 ip-172-31-39-104 pm2[364]: │ id │ name   │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    >
+Feb 13 20:57:37 ip-172-31-39-104 pm2[364]: ├────┼────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────>
+Feb 13 20:57:37 ip-172-31-39-104 pm2[364]: │ 0  │ app    │ default     │ 1.0.7   │ fork    │ 679      │ 0s     │ 0    │ online    >
+Feb 13 20:57:37 ip-172-31-39-104 pm2[364]: └────┴────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────>
+Feb 13 20:57:37 ip-172-31-39-104 systemd[1]: Started PM2 process manager.
+lines 1-23/23 (END)
+```
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+
+pepe@ip-172-31-39-104:~$ node --version
+v21.6.1
+
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js 
+[PM2][WARN] Applications chat, parse not running, starting...
+[PM2] App [chat] launched (1 instances)
+[PM2] App [parse] launched (1 instances)
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ app                │ fork     │ 0    │ online    │ 0%       │ 50.2mb   │
+│ 1  │ chat               │ fork     │ 0    │ online    │ 0%       │ 25.9mb   │
+│ 2  │ parse              │ fork     │ 0    │ online    │ 0%       │ 256.0kb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ pm2 delete app
+[PM2] Applying action deleteProcessId on app [app](ids: [ 0 ])
+[PM2] [app](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ chat               │ fork     │ 16   │ errored   │ 0%       │ 0b       │
+│ 2  │ parse              │ fork     │ 0    │ online    │ 0%       │ 119.9mb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+
+```
+
+![](/img/46.png)
+
+Sigue sin funcionar 
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 log parse
+
+
+/home/pepe/.pm2/logs/parse-error.log last 15 lines:
+2|parse    |     type: 'Unknown',
+2|parse    |     servers: Map(1) { '127.0.0.1:27017' => [ServerDescription] },
+2|parse    |     stale: false,
+2|parse    |     compatible: true,
+2|parse    |     heartbeatFrequencyMS: 10000,
+2|parse    |     localThresholdMS: 15,
+2|parse    |     setName: null,
+2|parse    |     maxElectionId: null,
+2|parse    |     maxSetVersion: null,
+2|parse    |     commonWireVersion: 0,
+2|parse    |     logicalSessionTimeoutMinutes: null
+2|parse    |   },
+2|parse    |   code: undefined,
+2|parse    |   [Symbol(errorLabels)]: Set(0) {}
+2|parse    | }
+
+2|parse  | MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017
+2|parse  |     at Timeout._onTimeout (/home/pepe/parse/node_modules/parse-server/node_modules/mongodb/lib/sdam/topology.js:291:38)
+2|parse  |     at listOnTimeout (node:internal/timers:569:17)
+2|parse  |     at process.processTimers (node:internal/timers:512:7) {
+2|parse  |   reason: TopologyDescription {
+2|parse  |     type: 'Unknown',
+2|parse  |     servers: Map(1) { '127.0.0.1:27017' => [ServerDescription] },
+2|parse  |     stale: false,
+2|parse  |     compatible: true,
+2|parse  |     heartbeatFrequencyMS: 10000,
+2|parse  |     localThresholdMS: 15,
+2|parse  |     setName: null,
+2|parse  |     maxElectionId: null,
+2|parse  |     maxSetVersion: null,
+2|parse  |     commonWireVersion: 0,
+2|parse  |     logicalSessionTimeoutMinutes: null
+2|parse  |   },
+2|parse  |   code: undefined,
+2|parse  |   [Symbol(errorLabels)]: Set(0) {}
+2|parse  | }
+2|parse  | MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017
+2|parse  |     at Timeout._onTimeout (/home/pepe/parse/node_modules/parse-server/node_modules/mongodb/lib/sdam/topology.js:291:38)
+2|parse  |     at listOnTimeout (node:internal/timers:569:17)
+2|parse  |     at process.processTimers (node:internal/timers:512:7) {
+2|parse  |   reason: TopologyDescription {
+2|parse  |     type: 'Unknown',
+2|parse  |     servers: Map(1) { '127.0.0.1:27017' => [ServerDescription] },
+2|parse  |     stale: false,
+2|parse  |     compatible: true,
+2|parse  |     heartbeatFrequencyMS: 10000,
+2|parse  |     localThresholdMS: 15,
+2|parse  |     setName: null,
+2|parse  |     maxElectionId: null,
+2|parse  |     maxSetVersion: null,
+2|parse  |     commonWireVersion: 0,
+2|parse  |     logicalSessionTimeoutMinutes: null
+2|parse  |   },
+2|parse  |   code: undefined,
+2|parse  |   [Symbol(errorLabels)]: Set(0) {}
+2|parse  | }
+```
+
+```sh
+# mogo inactivo
+pepe@ip-172-31-39-104:~$ systemctl status mongod.service
+
+○ mongod.service - MongoDB Database Server
+     Loaded: loaded (/lib/systemd/system/mongod.service; disabled; vendor preset: enabled)
+     Active: inactive (dead)
+       Docs: https://docs.mongodb.org/manual
+```
+
+Cuando instaas u servicio si ne¡o se arranca automaticamente es que no se arranca nunca automaticamente. Mongo por defecto no se inicia.
+
+En el manual de mongo te lo explica.
+
+```sh
+# al realizar un servicio, queda registrado, le dices que mongo ha de arrancar con el sistema operativo
+ubuntu@ip-172-31-39-104:~$ sudo systemctl enable mongod
+
+Created symlink /etc/systemd/system/multi-user.target.wants/mongod.service → /lib/systemd/system/mongod.service.
+```
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl start mongod # arrancamos
+ubuntu@ip-172-31-39-104:~$ sudo systemctl status mongod
+● mongod.service - MongoDB Database Server
+     Loaded: loaded (/lib/systemd/system/mongod.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2024-02-13 21:08:20 UTC; 6s ago
+       Docs: https://docs.mongodb.org/manual
+   Main PID: 1572 (mongod)
+     Memory: 227.1M
+        CPU: 1.300s
+     CGroup: /system.slice/mongod.service
+             └─1572 /usr/bin/mongod --config /etc/mongod.conf
+
+Feb 13 21:08:20 ip-172-31-39-104 systemd[1]: Started MongoDB Database Server.
+Feb 13 21:08:21 ip-172-31-39-104 mongod[1572]: {"t":{"$date":"2024-02-13T21:08:21.595Z"},"s":"I",  "c":"CONTROL",  "id":7484500, ">
+lines 1-12/12 (END)
+```
 
 
 
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ chat               │ fork     │ 16   │ errored   │ 0%       │ 0b       │
+│ 2  │ parse              │ fork     │ 12   │ online    │ 0%       │ 114.3mb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ pm2 restart parse
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [parse](ids: [ 2 ])
+[PM2] [parse](2) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ chat               │ fork     │ 16   │ errored   │ 0%       │ 0b       │
+│ 2  │ parse              │ fork     │ 13   │ online    │ 0%       │ 15.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ pm2 restart chat
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [chat](ids: [ 1 ])
+[PM2] [chat](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ chat               │ fork     │ 16   │ online    │ 0%       │ 19.6mb   │
+│ 2  │ parse              │ fork     │ 13   │ online    │ 0%       │ 114.7mb  │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+```
+
+![](/img/46.png)
+
+Sigue sin funcionar 
 
 
+```sh
+/home/pepe/.pm2/logs/parse-error.log last 15 lines:
+2|parse    | 
+2|parse    |     at Hook._require.Module.require (/home/pepe/.nvm/versions/node/v21.6.1/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+2|parse    |     at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+2|parse    |     at async file:///home/pepe/parse/index.js:34:3 {
+2|parse    |   code: 'ERR_REQUIRE_ESM'
+2|parse    | }
+2|parse    | Error [ERR_REQUIRE_ESM]: require() of ES Module /home/pepe/parse/cloud/main.js from /home/pepe/parse/node_modules/parse-server/lib/ParseServer.js not supported.
+2|parse    | main.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains "type": "module" which declares all .js files in that package scope as ES modules.
+2|parse    | Instead either rename main.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change "type": "module" to "type": "commonjs" in /home/pepe/parse/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).
+2|parse    | 
+2|parse    |     at Hook._require.Module.require (/home/pepe/.nvm/versions/node/v21.6.1/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:101:39)
+2|parse    |     at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+2|parse    |     at async file:///home/pepe/parse/index.js:34:3 {
+2|parse    |   code: 'ERR_REQUIRE_ESM'
+2|parse    | }
+```
+
+---
+> [!IMPORTANT]
+> cambiamos todo. Vamos a usar `supervisor` en vez de `pm2`. Lo tienes en los slides
+---
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 stop all
+[PM2] Applying action stopProcessId on app [all](ids: [ 1, 2 ])
+[PM2] [chat](1) ✓
+[PM2] [parse](2) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ chat               │ fork     │ 16   │ stopped   │ 0%       │ 0b       │
+│ 2  │ parse              │ fork     │ 13   │ stopped   │ 0%       │ 0b       │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ pm2 delete all
+[PM2] Applying action deleteProcessId on app [all](ids: [ 1, 2 ])
+[PM2] [chat](1) ✓
+[PM2] [parse](2) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ 
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ logout
+ubuntu@ip-172-31-39-104:~$ suno apt install supervisor
+        Command 'suno' not found, did you mean:
+        command 'sudo' from deb sudo (1.9.9-1ubuntu2.4)
+        command 'sudo' from deb sudo-ldap (1.9.9-1ubuntu2.4)
+        command 'sumo' from deb sumo (1.12.0+dfsg1-1)
+        Try: sudo apt install <deb name>
+ubuntu@ip-172-31-39-104:~$ sudo apt install supervisor
+        Reading package lists... Done
+        Building dependency tree... Done
+        Reading state information... Done
+        Suggested packages:
+        supervisor-doc
+        The following NEW packages will be installed:
+        supervisor
+        0 upgraded, 1 newly installed, 0 to remove and 31 not upgraded.
+        Need to get 278 kB of archives.
+        After this operation, 1684 kB of additional disk space will be used.
+        Get:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu jammy/universe amd64 supervisor all 4.2.1-1ubuntu1 [278 kB]
+        Fetched 278 kB in 0s (9265 kB/s)
+        Selecting previously unselected package supervisor.
+        (Reading database ... 94865 files and directories currently installed.)
+        Preparing to unpack .../supervisor_4.2.1-1ubuntu1_all.deb ...
+        Unpacking supervisor (4.2.1-1ubuntu1) ...
+        Setting up supervisor (4.2.1-1ubuntu1) ...
+        Created symlink /etc/systemd/system/multi-user.target.wants/supervisor.service → /lib/systemd/system/supervisor.service.
+        Processing triggers for man-db (2.10.2-1) ...
+        Scanning processes...                                                                                                              
+        Scanning linux images...                                                                                                           
+
+        Running kernel seems to be up-to-date.
+
+        No services need to be restarted.
+
+        No containers need to be restarted.
+
+        No user sessions are running outdated binaries.
+
+        No VM guests are running outdated hypervisor (qemu) binaries on this host.
+
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl status supervisor
+● supervisor.service - Supervisor process control system for UNIX
+     Loaded: loaded (/lib/systemd/system/supervisor.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2024-02-13 21:21:46 UTC; 1min 5s ago
+       Docs: http://supervisord.org
+   Main PID: 2145 (supervisord)
+      Tasks: 1 (limit: 1121)
+     Memory: 19.3M
+        CPU: 242ms
+     CGroup: /system.slice/supervisor.service
+             └─2145 /usr/bin/python3 /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+
+Feb 13 21:21:46 ip-172-31-39-104 systemd[1]: Started Supervisor process control system for UNIX.
+Feb 13 21:21:47 ip-172-31-39-104 supervisord[2145]: 2024-02-13 21:21:47,340 CRIT Supervisor is running as root.  Privileges were n>
+Feb 13 21:21:47 ip-172-31-39-104 supervisord[2145]: 2024-02-13 21:21:47,341 WARN No file matches via include "/etc/supervisor/conf>
+Feb 13 21:21:47 ip-172-31-39-104 supervisord[2145]: 2024-02-13 21:21:47,345 INFO RPC interface 'supervisor' initialized
+Feb 13 21:21:47 ip-172-31-39-104 supervisord[2145]: 2024-02-13 21:21:47,345 CRIT Server 'unix_http_server' running without any HTT>
+Feb 13 21:21:47 ip-172-31-39-104 supervisord[2145]: 2024-02-13 21:21:47,345 INFO supervisord started with pid 2145
+lines 1-17/17 (END)
+```
+
+¿como configuramos? cada aplicacion la hemos de crear en ` "/etc/supervisor/conf>`
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cd /etc/supervisor/conf.d/
+```
+
+```sh
+# notas propias que tienes en los slides de node
+[program:app_name] # comando con el nombre de la app
+command=/path/to/node/version index.js  # ruta apsoluta de la pp
+user=node # usarui
+directory=/path/to/source/code/folder #  donde queremos que se ejecute la app
+autostart=true # para que se inicie automaticamente
+autorestart=true # para que se reinicie automaticamente
+
+# todo esto para donde queresmoq eu estenlos archivos de logs
+stdout_logfile=/var/log/start.out.log  
+stdout_logfile_maxbytes=10MB 
+stdout_logfile_backups=3 
+stderr_logfile=/var/log/start.err.log 
+stderr_logfile_maxbytes=10MB 
+stdout_logfile_backups=3 
+
+environment=KEY="val",KEY2="val2"     # definir variables de entonro
+```
+
+> [!NOTE]
+> Comenzamos
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cd /etc/supervisor/conf.d/
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ sudo nano parse.conf
+
+#### NANO ####
+[program:parse]
+user=pepe
+command=RUTA_NODE index.js
+directory=/home/pepe/parse
+autostart=true 
+autorestart=true 
+environment=DATABASE_URI="mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"
+```
 
 
+```sh
+# buscando la ruta de node
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ sudo nano parse.conf
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ nvm which 18
+/home/pepe/.nvm/versions/node/v18.19.0/bin/node
+```
+
+```sh
+# cambiando ruta a nano
+pepe@ip-172-31-39-104:/etc/supervisor/conf.d$ logout
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ sudo nano parse.conf
+
+#### NANO ####
+[program:parse]
+user=pepe
+command=/home/pepe/.nvm/versions/node/v18.19.0/bin/node index.js
+directory=/home/pepe/parse
+autostart=true 
+autorestart=true
+environment=DATABASE_URI="mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ sudo systemctl restart supervisor
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ sudo systemctl status supervisor
+● supervisor.service - Supervisor process control system for UNIX
+     Loaded: loaded (/lib/systemd/system/supervisor.service; enabled; vendor preset: enabled)
+     Active: active (running) since Wed 2024-02-14 08:13:23 UTC; 47s ago
+       Docs: http://supervisord.org
+   Main PID: 3082 (supervisord)
+      Tasks: 1 (limit: 1121)
+     Memory: 45.8M
+        CPU: 24.038s
+     CGroup: /system.slice/supervisor.service
+             └─3082 /usr/bin/python3 /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+
+Feb 14 08:13:57 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:13:57,275 INFO exited: parse (exit status 1; not expected)
+Feb 14 08:13:58 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:13:58,278 INFO spawned: 'parse' with pid 3191
+Feb 14 08:13:59 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:13:59,280 INFO success: parse entered RUNNING state, process has>
+Feb 14 08:14:01 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:01,691 INFO exited: parse (exit status 1; not expected)
+Feb 14 08:14:02 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:02,694 INFO spawned: 'parse' with pid 3206
+Feb 14 08:14:03 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:03,696 INFO success: parse entered RUNNING state, process has>
+Feb 14 08:14:06 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:06,071 INFO exited: parse (exit status 1; not expected)
+Feb 14 08:14:07 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:07,075 INFO spawned: 'parse' with pid 3221
+Feb 14 08:14:08 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:08,076 INFO success: parse entered RUNNING state, process has>
+Feb 14 08:14:10 ip-172-31-39-104 supervisord[3082]: 2024-02-14 08:14:10,401 INFO exited: parse (exit status 1; not expected)
+lines 1-21/21 (END)
+```
+
+Arranca pero no funciona
+
+![](/img/46.png)
+
+Sigue sin funcionar , voy a mirar los logs
+
+```sh
+# fíjate donde están los logs
+ubuntu@ip-172-31-39-104:/etc/supervisor/conf.d$ cd /var/log/supervisor/
+ubuntu@ip-172-31-39-104:/var/log/supervisor$ ls -l
+        total 100
+        -rw------- 1 root root 66674 Feb 14 08:16 parse-stderr---supervisor-oazfk6fa.log
+        -rw------- 1 root root 14615 Feb 14 08:16 parse-stdout---supervisor-wou1_3de.log
+        -rw-r--r-- 1 root root 10560 Feb 14 08:16 supervisord.log
+ubuntu@ip-172-31-39-104:/var/log/supervisor$ cat parse-stderr---supervisor-oazfk6fa.log
+        cat: parse-stderr---supervisor-oazfk6fa.log: Permission denied
+ubuntu@ip-172-31-39-104:/var/log/supervisor$ sudo !!
+
+...
+/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144
+            require(path.resolve(process.cwd(), cloud));
+            ^
+
+Error [ERR_REQUIRE_ESM]: require() of ES Module /home/pepe/parse/cloud/main.js from /home/pepe/parse/node_modules/parse-server/lib/ParseServer.js not supported.
+main.js is treated as an ES module file as it is a .js file whose nearest parent package.json contains "type": "module" which declares all .js files in that package scope as ES modules.
+Instead either rename main.js to end in .cjs, change the requiring code to use dynamic import() which is available in all CommonJS modules, or change "type": "module" to "type": "commonjs" in /home/pepe/parse/package.json to treat all .js files as CommonJS (using .mjs for all ES modules instead).
+
+    at ParseServer.start (/home/pepe/parse/node_modules/parse-server/lib/ParseServer.js:144:13)
+    at async file:///home/pepe/parse/index.js:34:3 {
+  code: 'ERR_REQUIRE_ESM'
+}
+
+Node.js v18.19.0
+```
+
+Está dando el iso error de antes. Fíjate que te está diciendo `or change "type": "module" to "type": "commonjs" in /home/pepe/parse/package.json to treat all .js files as CommonJS`
+
+El problmea está en que si yo ejecuto con node.js la app arranca , es cierto que da un error por el tema de mongo 
+```sh
+# con esto si que arranca
+npm start
+
+# pero con node index.js no
+node index.js
+
+# estamos de acuerdo que 
+pepe@ip-172-31-39-104:~/parse$ cat package.json
+
+        {
+        "name": "parse-server-example",
+        "version": "1.2.3",
+        "description": "An example Parse API server using the parse-server module",
+        "repository": {
+        "type": "git",
+        "url": "https://github.com/ParsePlatform/parse-server-example"
+        },
+        "license": "MIT",
+        "main": "index.js",
+        "scripts": {
+        "coverage": "TESTING=true nyc jasmine",
+        "lint": "eslint --cache ./cloud && eslint --cache index.js && eslint --cache ./spec",
+        "lint-fix": "eslint --cache --fix ./cloud && eslint --cache --fix index.js && eslint --cache --fix ./spec",
+        "prettier": "prettier --write '{cloud,spec}/{**/*,*}.js' 'index.js'",
+        "start": "node index.js",
+# estamos de acuerdo que si ejecuto "node index.js" es lo mismo que ""start": "node index.js" del json
+```
+
+Pues fíajte que con uno no va y el otro si
+
+![](/img/47.png)
+
+así que la configuración con pm2 para que funcione sería la siguiente (con pm2):
+
+```sh
+module.exports = {
+  apps : [
+    {
+      name   : "chat",
+      cwd    : "/home/pepe/node-chat",
+      script : "npm",
+      args   : "start",
+      env    : { PATH: "/home/pepe/.nvm/versions/node/v16.20.2/bin:/usr/bin" }
+   },
+    {
+      name   : "parse",
+      cwd    : "/home/pepe/parse",
+      script : "npm",
+      args   : "start",
+      env    : {
+        PATH: "/home/pepe/.nvm/versions/node/v18.19.0/bin:/usr/bin",
+        DATABASE_URI: "mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"
+      }
+    }
+  ]
+}
+```
+
+ Al especificar `"script": "npm"` y `"args": "start"`, le estás diciendo a PM2 que ejecute el comando npm start para iniciar tu aplicación. 
+
+con `supervisor` sería:
+
+```sh
+[program:parse]
+user=pepe
+command=npm start
+directory=/home/pepe/parse
+autostart=true
+autorestart=true
+environment=DATABASE_URI="mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb",PATH="/home/apps/.nvm/versions/node/v18.19.0/bin:/usr/bin"
+
+[program:chat]
+user=pepe
+command=npm start
+directory=/home/pepe/node-chat
+autostart=true
+autorestart=true
+environment=PATH="/home/pepe/.nvm/versions/node/v16.20.2/bin:/usr/bin"
+```
+
+peeeeeeeeeeeeeeeeeeeeero con supervisor no hace bien el stop de las apps cuando arrancan por NPM, así que usemos PM2.
 
 
+**Desinstalar Supervisor**
 
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo apt purge supervisor
+        Reading package lists... Done
+        Building dependency tree... Done
+        Reading state information... Done
+        The following packages will be REMOVED:
+        supervisor*
+        0 upgraded, 0 newly installed, 1 to remove and 36 not upgraded.
+        After this operation, 1684 kB disk space will be freed.
+        Do you want to continue? [Y/n] Y
+        (Reading database ... 95001 files and directories currently installed.)
+        Removing supervisor (4.2.1-1ubuntu1) ...
+        Processing triggers for man-db (2.10.2-1) ...
+        (Reading database ... 94870 files and directories currently installed.)
+        Purging configuration files for supervisor (4.2.1-1ubuntu1) ...
+        dpkg: warning: while removing supervisor, directory '/var/log/supervisor' not empty so not removed
+        dpkg: warning: while removing supervisor, directory '/etc/supervisor/conf.d' not empty so not removed
+```
 
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ cat ecosystem.config.js 
+module.exports = {
+  apps : [
+    {
+      name   : "chat",
+      cwd    : "/home/pepe/node-chat",
+      script : "npm",
+      args   : "start",
+      env    : { PATH: "/home/pepe/.nvm/versions/node/v16.20.2/bin:/usr/bin" }
+   },
+    {
+      name   : "parse",
+      cwd    : "/home/pepe/parse",
+      script : "npm",
+      args   : "start",
+      env    : {
+        PATH: "/home/pepe/.nvm/versions/node/v18.19.0/bin:/usr/bin",
+        DATABASE_URI: "mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"
+      }
+    }
+  ]
+}
+pepe@ip-172-31-39-104:~$ mv ecosystem.config.js ecosystem.config.js.backup 
+```
 
-
-
-
-
-
-
+```sh
+pepe@ip-172-31-39-104:~$ pm2 list
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 0    │ online    │ 0%       │ 32.0mb   │
+│ 1  │ parse              │ fork     │ 39   │ online    │ 0%       │ 72.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ pm2 stop all
+p[PM2] Applying action stopProcessId on app [all](ids: [ 0, 1 ])
+m2[PM2] [chat](0) ✓
+ dele[PM2] [parse](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ chat               │ fork     │ 0    │ stopped   │ 0%       │ 0b       │
+│ 1  │ parse              │ fork     │ 39   │ stopped   │ 0%       │ 0b       │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+tpepe@ip-172-31-39-104:~$ pm2 delete all
+[PM2] Applying action deleteProcessId on app [all](ids: [ 0, 1 ])
+[PM2] [chat](0) ✓
+[PM2] [parse](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+```
 
