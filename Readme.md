@@ -4934,3 +4934,563 @@ tpepe@ip-172-31-39-104:~$ pm2 delete all
 [PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
 ```
 
+
+**?Qué ocurre cuando tenemos ngonx funcionando como proxi inverso y la app que está detrás no está en pie?**
+
+Ngins intenta trabajaro con al app que hay detrás pero la app no está funcionando
+
+![](/img/48.png)
+
+---
+**CARGANDO EL CHAT**
+---
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ cd node-chat/
+pepe@ip-172-31-39-104:~/node-chat$ node --version
+        v21.6.1
+pepe@ip-172-31-39-104:~/node-chat$ nvm use 16 # Parse necesita la version 16
+        Now using node v16.20.2 (npm v8.19.4)
+pepe@ip-172-31-39-104:~/node-chat$ npm start
+
+        > node-chat@1.0.7 start
+        > node app.js
+
+        [--:--:--][CONSOLE] [10:33:01] [Start] Listening at port 3000 # <--- escuchando en el uerto 3000
+        (node:88389) [DEP0066] DeprecationWarning: OutgoingMessage.prototype._headers is deprecated
+        (Use `node --trace-deprecation ...` to show where the warning was created)
+```
+
+Ahora la app del chat funciona correctamente en http://54.224.151.83/
+
+**Ahora vamos a desplegar el chat usando el comando `npm start`**
+
+Voy a user node 21 que es donde está instalado `pm2`
+
+```sh
+pepe@ip-172-31-39-104:~$ nvm use default # pm2 trabaja se ha creado con node 21
+        Now using node v21.6.1 (npm v10.2.4)
+```
+
+Generamos el esqueleto de ecosytem
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 init simple
+        File /home/pepe/ecosystem.config.js generated
+pepe@ip-172-31-39-104:~$ ls -l
+        total 16
+        -rw-rw-r--  1 pepe pepe   83 Feb 15 10:43 ecosystem.config.js # <--- hemos generado este nuevo
+        -rw-rw-r--  1 pepe pepe  530 Feb 14 20:07 ecosystem.config.js.backup
+        drwxrwxr-x  7 pepe pepe 4096 Feb 11 16:12 node-chat
+        drwxrwxr-x 11 pepe pepe 4096 Feb 13 16:02 parse
+```
+
+Configurando el modulo
+
+```sh
+  GNU nano 6.2   ecosystem.config.js *     
+                                      
+module.exports = {
+  apps : [
+    {
+      name   : "chat",
+      cwd    : "/home/pepe/node-chat", # directorio de trabajo
+      script : "npm", # ¿qué comando quiero ejecutar en node-chat?
+      args   : "start", # con qué argumento? npm start
+   }
+```
+
+Arrancamos pm2 con node-chat
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js
+[PM2][WARN] Applications chat not running, starting...
+[PM2] App [chat] launched (1 instances)
+┌────┬─────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name    │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ chat    │ default     │ 0.39.7  │ fork    │ 90036    │ 0s     │ 0    │ online    │ 0%       │ 19.8mb   │ pepe     │ disabled │
+└────┴─────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ pm2 list
+┌────┬─────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name    │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ chat    │ default     │ 0.39.7  │ fork    │ 90036    │ 5s     │ 0    │ online    │ 0%       │ 70.4mb   │ pepe     │ disabled │
+└────┴─────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+pepe@ip-172-31-39-104:~$ 
+
+```
+
+![](/img/49.png)
+
+---
+¿porqué nos da este error? porque está trabajandno con node 21
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 monit # con esto lo puedes ver
+```
+
+![](/img/50.png)
+
+Te dice que el script path `Script path           /home/pepe/.nvm/versions/node/v21.6.1/bin/npm   `
+
+¿como lo arreglamos? le hemos de dar más información de contexto.
+
+Lo más importante, cuando tienes una terminal y ejecutas un comando, eso es un programa, todo son programas y han de estar instalados en algún sistio, si tu haces `witch ls` ese programa te dice donde esta localizado ls. Entonces si estás en otro ptah como sabe dobnde ejecutar el programa que tu quieres , y en este caso para ello se llama `PATH`. Cuando te diga programa no encontrado, casi seguro sea esto.
+
+
+Le voy a configurar variables de entorno, redefiniedno el `path`
+
+```sh
+pepe@ip-172-31-39-104:~$ nvm which 16
+        /home/pepe/.nvm/versions/node/v16.20.2/bin/node
+```
+
+* `/home/pepe/.nvm/versions/node/v16.20.2/bin`: Esta parte del PATH señala al directorio donde están instalados los binarios de Node.js para la versión 16.20.2 gestionada por nvm 
+* `/usr/bin`: Es un directorio estándar en Unix donde se almacenan muchos de los ejecutables que vienen con el sistema operativo y otros programas instalados globalmente.
+
+`PATH: "/home/pepe/.nvm/versions/node/v16.20.2/bin:/usr/bin`
+
+
+```sh
+  GNU nano 6.2   ecosystem.config.js *     
+                                      
+module.exports = {
+  apps : [
+    {
+      name   : "chat",
+      cwd    : "/home/pepe/node-chat", # directorio de trabajo
+      script : "npm", # ¿qué comando quiero ejecutar en node-chat?
+      args   : "start", # con qué argumento? npm start
+      env    : { PATH: "/home/pepe/.nvm/versions/node/v16.20.2/bin:/usr/bin" } # le tienes que decir donde buscar la version correcta de node
+   }  
+ ]
+}
+```
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 start ecosystem.config.js
+[PM2][WARN] Applications chat not running, starting...
+[PM2] App [chat] launched (1 instances)
+┌────┬─────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name    │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ chat    │ default     │ 0.39.7  │ fork    │ 90896    │ 0s     │ 0    │ online    │ 0%       │ 16.0mb   │ pepe     │ disabled │
+└────┴─────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2][WARN] Current process list is not synchronized with saved list. App app differs. Type 'pm2 save' to synchronize.
+
+```
+
+Tu chat ya funciona en en http://54.224.151.83/
+
+De hecho si te vas a 
+
+```sh
+pepe@ip-172-31-39-104:~$ htop
+```
+
+Y aprietas `f5` para extender el arbol de las rutas hechas
+
+![](/img/51.png)
+
+Puedes ver que, de pm2, se ha ido a `npm start` luego `sh -c node app.js` , entonces vemos que lo que no encontraba era el `sh -c` por eso cuando le hemos puesto el `/usr/bin` al path arranca porque puede hacer lo siguiente `sh -c node app.js`
+
+**CARGANDO PARA PASE**
+---
+
+
+```sh
+  GNU nano 6.2   ecosystem.config.js *     
+                                      
+module.exports = {
+  apps : [
+    {
+      name   : "chat",
+      cwd    : "/home/pepe/node-chat", # directorio de trabajo
+      script : "npm", # ¿qué comando quiero ejecutar en node-chat?
+      args   : "start", # con qué argumento? npm start
+      env    : { PATH: "/home/pepe/.nvm/versions/node/v16.20.2/bin:/usr/bin" } # le tienes que decir donde buscar la version correcta de node
+   },
+    {
+      name   : "parse",
+      cwd    : "/home/pepe/parse",
+      script : "npm",
+      args   : "start",
+      env    : {
+        PATH: "/home/pepe/.nvm/versions/node/v18.19.0/bin:/usr/bin",
+        DATABASE_URI: "mongodb://axempleparse:axempleparse@127.0.0.1:27017/parsedb"
+      }
+    }
+  ]
+}
+```
+
+
+![](/img/52.png)
+
+> [!IMPORTANT]
+> Ahora miamo si el ordenador se reinicia las app no se van a levantar.
+> Hay que hacer una foto `pm2 save`
+> Esto hay que hacerlo siempre quemodifiquemos algún archivo de configuracion
+
+```sh
+pepe@ip-172-31-39-104:~$ pm2 save
+        [PM2] Saving current process list...
+        [PM2] Successfully saved in /home/pepe/.pm2/dump.pm2
+```
+
+**Tenemos que poner nginx por delante**
+
+Para que el despliegue del PArse esté perfecto ... falta el puerto `http://54.224.151.83:1337/parse/classes/Cervezas`
+
+Ahora hemos de utilizar `nginx como proxy inverso`
+
+* En las DNS `ec2-54-224-151-83.compute-1.amazonaws.com` estaba funcionando la app de React
+* El chat en la ip `http://54.224.151.83`
+
+```sh
+pepe@ip-172-31-39-104:~$ cat /etc/nginx/sites-enabled/chat
+server {
+        listen 80 default; # este responde la llamada.
+        location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+```
+
+Quiero que entrando por la ip pueda acceder al `chat` pero tambien a `Parse`. 
+
+Todas las peticiones que hagan cominezan por `/parse`
+
+```sh
+server {
+        listen 80 default; 
+
+         location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337; # la reeencia al 1337 con toda la ruta                 
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+
+        location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+```
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx
+```
+
+Sigue funcionando sin la dns
+
+![](/img/53.png)
+
+
+* En las DNS `ec2-54-224-151-83.compute-1.amazonaws.com` estaba funcionando la app de React
+* El chat en la ip `http://54.224.151.83`
+* Siempre que comience por `/parse` ya funciona : `http://54.224.151.83/parse/classes/Cervezas`
+
+---
+**Importante** podemos cerrar el puerto 1337 y nos quedamos com
+
+![](/img/54.png)
+
+
+Ya puedes trabajar sin dns
+
+![](/img/55.png)
+
+---
+
+## archivos estáticos de la aplicación
+
+
+![](/img/56.png)
+
+---
+La `~` le dice que vas a usar una expresion regular.
+
+![](/img/57.png)
+
+Fíjate que tienes archivos servidos con /js | /css | img | etc
+
+Y los sirve express
+
+Dejemos que `nginx` sirva estos archivos que lo hace muy bien
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo -u pepe -i
+pepe@ip-172-31-39-104:~$ cd node-chat/
+pepe@ip-172-31-39-104:~/node-chat$ ls -l
+        total 92
+        -rw-rw-r--  1 pepe pepe  1079 Feb 11 16:06 LICENSE
+        -rw-rw-r--  1 pepe pepe  2691 Feb 11 16:06 README.md
+        -rw-rw-r--  1 pepe pepe 14805 Feb 11 16:06 app.js
+        -rw-rw-r--  1 pepe pepe   234 Feb 11 16:06 config.json
+        drwxrwxr-x  2 pepe pepe  4096 Feb 11 16:06 lib
+        drwxrwxr-x 58 pepe pepe  4096 Feb 11 16:12 node_modules
+        -rw-rw-r--  1 pepe pepe 41017 Feb 11 16:12 package-lock.json
+        -rw-rw-r--  1 pepe pepe   347 Feb 11 16:06 package.json
+        drwxrwxr-x  7 pepe pepe  4096 Feb 11 16:06 public
+        drwxrwxr-x  2 pepe pepe  4096 Feb 11 16:06 views
+pepe@ip-172-31-39-104:~/node-chat$ ls -l public/
+        total 20
+        drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 css
+        drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 fonts
+        drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 img
+        drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 js
+        drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 sounds
+pepe@ip-172-31-39-104:~/node-chat$ 
+```
+
+Ya sabes donde tienes que ir a buscar las cosas, fíjate las carpetas que tiene /public
+
+La instrucción laponemos antes de `location /` porque si no `nginx` la procesa por orden y ya no actuaría
+
+
+Lo que te pido en la práctica es una cabecera personaliada para demostrar que lo has puesto tu. ¿como? en nginx podemos poner a las cabeceras de las respuestas la instrucción add header , `X-Owner` y a continuación iría el valor, el valor pondría el usuario de `github` : `alexjust-data`
+
+
+```sh
+pepe@ip-172-31-39-104:~/node-chat$ logout
+ubuntu@ip-172-31-39-104:~$ sudo nano /etc/nginx/sites-enabled/chat
+
+
+server {
+        listen 80 default; # este responde la llamada.
+
+         location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+
+        location ~ ^/(css|img|sounds|fonts|js)/ { 
+                root /home/pepe/node-chat/public;
+                acces_log off;
+                expires max;
+                add_header X-Owner AlexJustData
+        }
+
+        location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx
+```
+
+![](/img/59.png)
+
+
+```sh
+# vamos a ver en los logs
+ubuntu@ip-172-31-39-104:~$ sudo tail nginx /var/log/nginx/error.log
+
+
+tail: cannot open 'nginx' for reading: No such file or directory
+==> /var/log/nginx/error.log <==
+==> /var/log/nginx/error.log <==
+
+2024/02/15 17:24:03 [error] 92015#92015: *11816 open() "/home/pepe/node-chat/public/js/chat.js" failed (13: Permission denied), client: 85.87.66.72, server: , request: "GET /js/chat.js HTTP/1.1", host: "54.224.151.83", referrer: "http://54.224.151.83/"
+```
+
+
+El error "Permission denied" (Permiso denegado) indica que Nginx no tiene permiso para acceder al archivo complete.ly.1.0.1.min.js ubicado en /home/pepe/node-chat/public/js/. Esto suele ocurrir por problemas de permisos en el sistema de archivos.
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo ls /home/pepe/node-chat/public/js/chat.js
+/home/pepe/node-chat/public/js/chat.js # la ruta existe 
+```
+
+**1ro hemos de ver con qué usuario nginx accede a la ruta**
+
+```sh
+ubuntu@ip-172-31-39-104:~$ ps aux | grep nginx
+root         432  0.0  0.6  55956  6076 ?        Ss   Feb13   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data   91490  0.0  0.6  56240  6396 ?        S    16:27   0:00 nginx: worker process is shutting down
+www-data   92015  0.0  0.6  56264  6560 ?        S    17:23   0:00 nginx: worker process
+ubuntu     92026  0.0  0.2   7008  2304 pts/0    S+   17:29   0:00 grep --color=auto nginx
+```
+
+Es `www-data` porque root hace lo que quiere.
+
+```sh
+ubuntu@ip-172-31-39-104:~$ ls -l /home/pepe/node-chat/public
+ls: cannot access '/home/pepe/node-chat/public': Permission denied
+ubuntu@ip-172-31-39-104:~$ sudo !!
+sudo ls -l /home/pepe/node-chat/public
+total 20
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 css
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 fonts
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 img
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 js
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 sounds
+```
+
+Podemos ver que hay permisos de ejecución sobre estas carpetas
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo ls -l /home/pepe/node-chat/public/js/
+total 636
+-rw-rw-r-- 1 pepe pepe  35452 Feb 11 16:06 bootstrap.min.js
+-rw-rw-r-- 1 pepe pepe  24829 Feb 11 16:06 chat.js
+-rw-rw-r-- 1 pepe pepe   6038 Feb 11 16:06 complete.ly.1.0.1.min.js
+-rw-rw-r-- 1 pepe pepe  84774 Feb 11 16:06 emojione.min.js
+-rw-rw-r-- 1 pepe pepe  84320 Feb 11 16:06 jquery-2.1.3.min.js
+-rw-rw-r-- 1 pepe pepe 240427 Feb 11 16:06 jquery-ui.min.js
+-rw-rw-r-- 1 pepe pepe   5564 Feb 11 16:06 jquery.easing.min.js
+-rw-rw-r-- 1 pepe pepe  95785 Feb 11 16:06 jquery.js
+-rw-rw-r-- 1 pepe pepe   3599 Feb 11 16:06 jquery.linkify.min.js
+-rw-rw-r-- 1 pepe pepe   4094 Feb 11 16:06 material.min.js
+-rw-rw-r-- 1 pepe pepe   3939 Feb 11 16:06 material.min.js.map
+-rw-rw-r-- 1 pepe pepe   2809 Feb 11 16:06 ripples.min.js
+-rw-rw-r-- 1 pepe pepe   3743 Feb 11 16:06 ripples.min.js.map
+-rw-rw-r-- 1 pepe pepe  33887 Feb 11 16:06 sockjs-0.3.min.js
+```
+
+Todos tiene permiso de lectura para otros usuarios. Los permisos están bien! ¿donde está el problema? más para arriba
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo ls -l /home/pepe/node-chat/public/
+total 20
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 css
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 fonts
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 img
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 js
+drwxrwxr-x 2 pepe pepe 4096 Feb 11 16:06 sounds
+```
+
+Hay permisos
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo ls -l /home/pepe/node-chat/
+total 92
+-rw-rw-r--  1 pepe pepe  1079 Feb 11 16:06 LICENSE
+-rw-rw-r--  1 pepe pepe  2691 Feb 11 16:06 README.md
+-rw-rw-r--  1 pepe pepe 14805 Feb 11 16:06 app.js
+-rw-rw-r--  1 pepe pepe   234 Feb 11 16:06 config.json
+drwxrwxr-x  2 pepe pepe  4096 Feb 11 16:06 lib
+drwxrwxr-x 58 pepe pepe  4096 Feb 11 16:12 node_modules
+-rw-rw-r--  1 pepe pepe 41017 Feb 11 16:12 package-lock.json
+-rw-rw-r--  1 pepe pepe   347 Feb 11 16:06 package.json
+drwxrwxr-x  7 pepe pepe  4096 Feb 11 16:06 public
+drwxrwxr-x  2 pepe pepe  4096 Feb 11 16:06 views
+```
+
+Aquí de lectura y ejecucion 
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo ls -l /home/pepe/
+total 16
+-rw-rw-r--  1 pepe pepe  531 Feb 15 11:39 ecosystem.config.js
+-rw-rw-r--  1 pepe pepe  530 Feb 14 20:07 ecosystem.config.js.backup
+drwxrwxr-x  7 pepe pepe 4096 Feb 11 16:12 node-chat
+drwxrwxr-x 11 pepe pepe 4096 Feb 13 16:02 parse
+```
+
+tbn lectura y ejecucion
+
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo ls -l /home
+total 8
+drwxr-x--- 10 pepe   pepe   4096 Feb 15 11:39 pepe
+drwxr-x---  5 ubuntu ubuntu 4096 Feb 13 15:21 ubuntu
+```
+
+La salida del comando `ls -l /home` muestra que el directorio `/home/pepe`, que contiene tu aplicación `node-chat`, tiene permisos `drwxr-x---`. 
+
+Esto significa:
+
+* `d`: Es un directorio.
+* `rwx` para el usuario propietario (pepe): Tiene permisos de lectura (r), escritura (w), y ejecución (x).
+* `r-x` para el grupo propietario (pepe): Tiene permisos de lectura y ejecución, pero no de escritura.
+* Ningún permiso para otros usuarios (`---`): Otros usuarios no tienen ningún permiso en este directorio.
+
+Dado que Nginx suele ejecutarse bajo el usuario `www-data` o similar, dependiendo de la configuración de tu sistema, el servidor web actualmente no tiene permiso para leer o acceder a los archivos dentro de `/home/pepe` debido a la falta de permisos para "otros usuarios".
+
+Solución: Ajustar los Permisos
+
+Para resolver este problema, hay varias estrategias que puedes seguir, dependiendo de tus necesidades de seguridad y configuración. Una opción común es agregar el usuario bajo el cual se ejecuta Nginx (comúnmente www-data) al grupo pepe y asegurarse de que el grupo tenga permisos de lectura (y ejecución, para directorios) en los archivos y directorios necesarios.
+
+Me gusta las soluciones que se vean por la pantalla
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo chmod o+rx /home/pepe
+ubuntu@ip-172-31-39-104:~$ ls -l /home
+        total 8
+        drwxr-xr-x 10 pepe   pepe   4096 Feb 15 11:39 pepe
+        drwxr-x---  5 ubuntu ubuntu 4096 Feb 13 15:21 ubuntu
+```
+
+Si recargas ya funciona. Además mira la cabecera estática 
+
+![](/img/58.png)
+
+El `755` es `rx` el chmod  
+
+
+## DNS - Domain Name Service
+Lo que hace que Internet, sea Internet
+
+El servicio de DNS nos permite navegar por internet utilizando nombres de dominio, evitando así la necesidad de recordar las direcciones IP de los servidores que sirven el contenido que queremos consumir.
+
+Actúa en la capa de aplicación de la pila de protocolos.
+
+Tipos de registro DNS más importantes
+
+* **A/AAAA** = Address. Apuntan a una IP. Traducen el dominio a una IP. 
+* **CNAME** = Alias.
+* **NS** = Name Server. Apuntan a una IP o dominio de un servidor DNS. 
+* **MX** = Mail Exchange. Apuntan a los servidores de correo.
+
+**Ejemplo: servidor propio y correo con Google Apps**
+
+* **NS** = IP o dominio del servidor DNS del proveedor de dominio A/AAAA = IP de servidor de AWS
+* **MX** = `aspmx.l.google.com`
+
+**Jerarquía DNS***
+
+![](/img/60.png)
+
+---
+
+![](/img/61.png)
