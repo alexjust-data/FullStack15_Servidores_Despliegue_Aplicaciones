@@ -5494,3 +5494,451 @@ Tipos de registro DNS más importantes
 ---
 
 ![](/img/61.png)
+
+
+[www.dnschecker.org](https://dnschecker.org/)
+
+**Vamos a gestionar un dominio desde aws**
+
+Cada uno lo tedrá comprado en una interface diferente, pero conceptualmente es lo mismo.
+
+Fíjate que en AWS durante la prácticas habrás apagado el servidor para que no te cobre. Nosotros queremos que la web que vamos a crear no se apague.
+
+En AWS podemos solicitar tener una ip fija para miservidor gratos mientras sea una ip por maquina, es decir ahora por la `web-15`
+
+en Elastic IP addresses podemos solicitar en `Allocate Elastic IP address` / `create allocate`
+
+![](/img//62.png)
+
+Si la tienes ahí quieta AWS te la va a cobrar , si la asocias te permite gratis asociarla con alguna instancia
+
+![](/img//64.png)
+
+![](/img//65.png)
+
+![](/img//66.png)
+
+* esta ip te carga el chat http://34.224.192.130/
+* la dns `te carga te carga el chat`.... porque?? 
+
+```sh
+➜  FullStack15_Servidores_Despliegue_Aplicaciones git:(main) ✗ ssh -i ../Despliegue_AWS/web15.pem ubuntu@34.224.192.130
+Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Thu Feb 15 19:03:42 UTC 2024
+
+  System load:  0.0               Processes:             110
+  Usage of /:   59.3% of 7.57GB   Users logged in:       1
+  Memory usage: 53%               IPv4 address for eth0: 172.31.39.104
+  Swap usage:   0%
+
+ * Ubuntu Pro delivers the most comprehensive open source security and
+   compliance features.
+
+   https://ubuntu.com/aws/pro
+
+Expanded Security Maintenance for Applications is not enabled.
+
+31 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+Last login: Thu Feb 15 16:05:46 2024 from 85.87.66.72
+ubuntu@ip-172-31-39-104:~$ 
+```
+
+nada cambió , `te carga te carga el chat`.... porque?? 
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ ls -l
+        total 0
+        lrwxrwxrwx 1 root root 31 Feb 12 09:50 chat -> /etc/nginx/sites-available/chat
+        lrwxrwxrwx 1 root root 37 Feb  9 13:46 react -> /etc/nginx/sites-available/react-todo
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ cat react 
+server {
+        listen 80;
+        server_name ec2-54-224-151-83.compute-1.amazonaws.com;
+        root /var/www/react-todo;
+        index index.html;
+        location / {
+                try_files $uri $uri/ /index.html;
+        }
+}
+```
+
+Reacto sólo carga para la DNS que hemos dicho, por eso no carga. Pero porqué carga el chat?? que tiene de especial??
+Hemos dicho que React solo responde por esta dns ` server_name ec2-54-224-151-83.compute-1.amazonaws.com;`
+
+¿QUien atiende una peticion si nadie me atiende una peticion? el chat
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ cat chat 
+server {
+        listen 80 default; # este responde la llamada.
+       
+	 location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+        
+	location ~ ^/(css|img|sounds|fonts|js)/ {
+		root /home/pepe/node-chat/public;
+		access_log off;
+		expires max;
+		add_header X-Owner AlexJustData;
+	}
+
+	location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+```
+
+
+hemos de modificar el archivo para que coja la nueva dns de amazon
+
+
+
+ec2-34-224-192-130.compute-1.amazonaws.com
+
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ sudo nano react 
+
+# ANTES
+server {
+        listen 80;
+        server_name ec2-54-224-151-83.compute-1.amazonaws.com;
+        root /var/www/react-todo;
+        index index.html;
+        location / {
+                try_files $uri $uri/ /index.html;
+        }
+}
+#DESPUES
+server {
+        listen 80;
+        ec2-34-224-192-130.compute-1.amazonaws.com;
+        root /var/www/react-todo;
+        index index.html;
+        location / {
+                try_files $uri $uri/ /index.html;
+        }
+}
+
+
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ sudo nginx -t
+nginx: [warn] server name "/var/www/react-todo" has suspicious symbols in /etc/nginx/sites-enabled/react:4
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-enabled$ sudo systemctl reload nginx
+```
+
+Ahora la carga la app de Redux!! `http://ec2-34-224-192-130.compute-1.amazonaws.com/`
+
+
+---
+
+**para comprimir los estáticos**, 
+
+> [!NOTE]
+> Además es recomendable porque se te comprime al 90%
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ sudo nano nginx.conf
+
+# Descomenta esta linea de nano
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/java>
+
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+ubuntu@ip-172-31-39-104:/etc/nginx$ sudo systemctl reload nginx
+```
+
+Ahora vete al browser 
+
+![](/img//67.png)
+
+
+
+**CREAR UN DOMINIO**
+
+El servicio `Route 53 Dashborad` se pueden comprar dominios y gestionar dns´s. No hace falta comprar un dominio en amazon para poder gestionar las dns con ellos.
+
+Las `Hosted zones` son las zonas hospedadas en aws
+
+> [!NOTA]
+> MIRA EL VIDEO -> 2:36:00 video 5.mp4
+
+
+**Me creo un dominio gratis con** https://www.duckdns.org/
+
+Le coloco la ip de la instancia aws web-15
+
+![](/img//68.png)
+
+Ahora en alexjust.duckdns.org  está cargando tu chat
+
+Si tu ahora le dices `me-lo-invento.alexjust.duckdns.org`  te va a cargar igual el chat. Es decir cualquier subdominio que le pongas va a puntar a la mismia ip de dominio.
+
+Esto significa que con nginx te pudes montar un servicio por ejemplo `next-cloud` que es como para montarte una nube en tu casa; es open source y tienes tus archivos concronizados desde el movil o pc, etc es una nube opencsource 
+
+Si cualquier subdominio apunta al mismo servidor, podemos hacer 
+
+* `chat.alexjust.duckdns.org`
+* `react.alexjust.duckdns.org`
+* `parse.alexjust.duckdns.org`
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cd /etc/nginx/sites-available/
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ la -l
+total 12
+-rw-r--r-- 1 root root 1006 Feb 15 17:23 chat
+-rw-r--r-- 1 root root 2412 May 30  2023 default
+-rw-r--r-- 1 root root  229 Feb 15 19:17 react-todo
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano chat 
+
+
+server {
+        listen 80 default; # este responde la llamada.
+
+        server_name chat.alexjust.duckdns.org;
+
+         location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+
+        location ~ ^/(css|img|sounds|fonts|js)/ {
+                root /home/pepe/node-chat/public;
+                access_log off;
+                expires max;
+                add_header X-Owner AlexJustData;
+        }
+
+        location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+```
+
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano react-todo 
+
+server {
+        listen 80;
+        server_name ec2-34-224-192-130.compute-1.amazonaws.com react.alexjust.duckdns.org;
+        root /var/www/react-todo;
+        index index.html;
+        location / {
+                try_files $uri $uri/ /index.html;
+        }
+}
+```
+
+En nginx sólo puede haber un sitio que actue como defoult server
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano default
+
+
+# ANTES
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+# DESPUES
+server {
+        listen 80;
+        listen [::]:80;
+
+# ....
+
+
+# ANTES
+        server_name _;
+
+# DESPUES
+        server_name alexjust.duckdns.org;
+
+```
+
+CON NGINX HEMOS DE ACTIVARLO, ACUÉRDATE QUE ERA CON UN ENLACE DIRECTO
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nginx -t
+nginx: [warn] conflicting server name "alexjust.duckdns.org" on 0.0.0.0:80, ignored
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+Falta generar el subdominio para parse
+* Parse estaba funcionando con un subdominio del chat. entonces no hemos de crear un server nuevo para parse
+
+```sh
+# hago un copiar pegar y lo llamo parse
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo cp chat parse
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ ls -l
+total 16
+-rw-r--r-- 1 root root 1068 Feb 15 19:51 chat
+-rw-r--r-- 1 root root 2401 Feb 15 19:56 default
+-rw-r--r-- 1 root root 1068 Feb 15 20:00 parse
+-rw-r--r-- 1 root root  256 Feb 15 19:53 react-todo
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nano parse
+
+
+# ANTES
+server {
+        listen 80 default; # este responde la llamada.
+
+        server_name alexjust.duckdns.org chat.alexjust.duckdns.org;
+
+         location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+
+        location ~ ^/(css|img|sounds|fonts|js)/ {
+                root /home/pepe/node-chat/public;
+                access_log off;
+                expires max;
+                add_header X-Owner AlexJustData;
+        }
+
+        location / {       # cuando la peticion comienza por barra (cualquir peticion)
+                proxy_pass http://127.0.0.1:3000; # se la pasas a este
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+
+# DESPUES
+server {
+        listen 80;
+
+        server_name parse.alexjust.duckdns.org;
+
+         location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+```
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo ln -s /etc/nginx/sites-available/parse /etc/nginx/sites-enabled/parse
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nginx -t
+        nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+        nginx: configuration file /etc/nginx/nginx.conf test is successful
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo systemctl reload nginx
+```
+
+**Ya te funciona todos los subdominios**
+
+* http://alexjust.duckdns.org/
+* http://chat.alexjust.duckdns.org/
+* http://react.alexjust.duckdns.org/
+* http://parse.alexjust.duckdns.org/parse/classes/Cervezas/
+
+
+
+Quiero quitar esto `/parse` ->  http://parse.alexjust.duckdns.org`/parse`/classes/Cervezas/
+Sin tocar el codigo de parse
+
+
+```sh
+# ANTES
+server {
+        listen 80;
+
+        server_name parse.alexjust.duckdns.org;
+
+         location /parse {       # cuando la peticion comienza por /parse (cualquir peticion)
+                proxy_pass http://127.0.0.1:1337;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+
+
+# DESPUES
+server {
+        listen 80;
+
+        server_name parse.alexjust.duckdns.org;
+
+         location /parse {                                                                   
+                proxy_pass http://127.0.0.1:1337/parse; # añadimos /parse
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+}
+
+
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo systemctl reload nginx
+```
+
+
+
