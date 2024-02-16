@@ -5923,8 +5923,8 @@ server {
 
         server_name parse.alexjust.duckdns.org;
 
-         location /parse {                                                                   
-                proxy_pass http://127.0.0.1:1337/parse; # añadimos /parse
+         location / {                                                                   
+                proxy_pass http://127.0.0.1:1337/parse/; # añadimos /parse
                 proxy_redirect off;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;
@@ -5935,10 +5935,358 @@ server {
 
 
 ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo nginx -t
-nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-nginx: configuration file /etc/nginx/nginx.conf test is successful
+        nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+        nginx: configuration file /etc/nginx/nginx.conf test is successful
 ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo systemctl reload nginx
 ```
 
+![](/img/69.png)
 
+Tener `nginx` entre medias te permite hacer cositas sin tocar la app.
+
+**Si quieres montar en tu casa la Cloud fata seguridad**
+
+Actualmente la conexion a estos sitios mios no son seguras, cualquiera podría ver o monitorizar mis paquetes de conexion, necesito `https` es decir un certificado.
+
+https://www.godaddy.com/es-es/seguridad-web/certificado-ssl  Provee de estos paquetes y deberías de comprar un certficado por cada dominio. 
+
+Pero.. tú te puedes generar a ti mismo un certificado:
+* Un certificado es, : el interesado genera el certificado y a de haber una entidad certificadora que verifique
+* Un certificado expedido por ti mismo quien te haya firmado el certificado se fia o no
+
+**Let´s Encrypt**
+
+https://letsencrypt.org/
+
+
+Es una autoridad certificadora sin animo de lucro gratis. Además el esfuerzo de tenerlo y renovar es muy fácil.
+
+https://letsencrypt.org/getting-started/#with-shell-access
+
+"Recomendamos que la mayoría de las personas con acceso shell utilicen el cliente [Certbot](https://certbot.eff.org/) ACME. Puede automatizar la emisión e instalación de certificados sin tiempo de inactividad. También tiene modos expertos para personas que no quieren configuración automática. Es fácil de usar, funciona en muchos sistemas operativos y tiene excelente documentación. Visite el sitio de Certbot para obtener instrucciones personalizadas para su sistema operativo y servidor web. Si Certbot no satisface sus necesidades o le gustaría probar algo más, hay muchos más [clientes ACME para elegir](https://letsencrypt.org/docs/client-options/). Una vez que haya elegido el software cliente ACME, consulte la documentación de ese cliente para continuar. Si está experimentando con diferentes clientes ACME, utilice nuestro [entorno de prueba](https://letsencrypt.org/docs/staging-environment/) para evitar alcanzar los límites de tasas."
+
+`certbot instructions` : https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal
+
+
+
+```sh
+# buscamos todos los paquetes para instalar de certbot
+# de entro todos los paquetes para instalar
+# buscará los que aparecen la palabra cerbot
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo apt search certbot
+
+
+# y si yo quiero buscar alguno con nginx
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo apt search certbot | grep nginx
+
+        WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+        python3-certbot-nginx/jammy 1.21.0-1 all
+
+# instalando 
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo apt install python3-certbot-nginx
+```
+
+_flipa_
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ sudo certbot --nginx
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Enter email address (used for urgent renewal and security notices)
+ (Enter 'c' to cancel): alexjustdata@gmail.com
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Please read the Terms of Service at
+https://letsencrypt.org/documents/LE-SA-v1.3-September-21-2022.pdf. You must
+agree in order to register with the ACME server. Do you agree?
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(Y)es/(N)o: Y
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Would you be willing, once your first certificate is successfully issued, to
+share your email address with the Electronic Frontier Foundation, a founding
+partner of the Let's Encrypt project and the non-profit organization that
+develops Certbot? We'd like to send you email about our work encrypting the web,
+EFF news, campaigns, and ways to support digital freedom.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+(Y)es/(N)o: N
+Account registered.
+
+# mira todos los server names que tienes en nginx (nombres de dominios)
+# si no pones nada los sacaría para todos pero no para los de amazon
+Which names would you like to activate HTTPS for?
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1: ec2-34-224-192-130.compute-1.amazonaws.com
+2: alexjust.duckdns.org
+3: chat.alexjust.duckdns.org
+4: parse.alexjust.duckdns.org
+5: react.alexjust.duckdns.org
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Select the appropriate numbers separated by commas and/or spaces, or leave input
+blank to select all options shown (Enter 'c' to cancel): 2 3 4 5
+Requesting a certificate for alexjust.duckdns.org and 3 more domains
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/alexjust.duckdns.org/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/alexjust.duckdns.org/privkey.pem
+This certificate expires on 2024-05-16.
+These files will be updated when the certificate renews.
+Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+Deploying certificate
+Successfully deployed certificate for alexjust.duckdns.org to /etc/nginx/sites-enabled/default
+Successfully deployed certificate for chat.alexjust.duckdns.org to /etc/nginx/sites-enabled/chat
+Successfully deployed certificate for parse.alexjust.duckdns.org to /etc/nginx/sites-enabled/parse
+Successfully deployed certificate for react.alexjust.duckdns.org to /etc/nginx/sites-enabled/react
+Congratulations! You have successfully enabled HTTPS on https://alexjust.duckdns.org, https://chat.alexjust.duckdns.org, https://parse.alexjust.duckdns.org, and https://react.alexjust.duckdns.org
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ 
+```
+
+**Deploying certificate**
+* Successfully deployed certificate for alexjust.duckdns.org to /etc/nginx/sites-enabled/default
+* Successfully deployed certificate for chat.alexjust.duckdns.org to /etc/nginx/sites-enabled/chat
+* Successfully deployed certificate for parse.alexjust.duckdns.org to /etc/nginx/sites-enabled/parse
+* Successfully deployed certificate for react.alexjust.duckdns.org to /etc/nginx/sites-enabled/react
+Congratulations! You have successfully enabled HTTPS on 
+* https://alexjust.duckdns.org, 
+* https://chat.alexjust.duckdns.org, 
+* https://parse.alexjust.duckdns.org, 
+* https://react.alexjust.duckdns.org
+
+
+¿Funcionan? `NO` ¿qué pasa?
+
+```sh
+ubuntu@ip-172-31-39-104:/etc/nginx/sites-available$ cat parse
+server {
+
+	server_name parse.alexjust.duckdns.org;
+       
+	 location / {     
+                proxy_pass http://127.0.0.1:1337/parse/;
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+        }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/alexjust.duckdns.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/alexjust.duckdns.org/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = parse.alexjust.duckdns.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+        listen 80;
+
+	server_name parse.alexjust.duckdns.org;
+    return 404; # managed by Certbot
+}
+```
+
+Te ha modifcado cosas, el lissen 80 está cambiado por un `listen 443 ssl; # managed by Certbot` es el protocolo del puerto htts. A metido todo esto
+
+```sh
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/alexjust.duckdns.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/alexjust.duckdns.org/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = parse.alexjust.duckdns.org) {  # todo lo que te envía por http lo reenvia a https
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+        listen 80;
+
+	server_name parse.alexjust.duckdns.org;
+    return 404; # managed by Certbot
+}
+```
+
+> [!IMPORTANT]
+> No tenemos abierto el puerto 443 en el servidor AWS
+
+
+![](/img/70.png)
+
+
+Todo esto tan bonito algo malo tiene que tener... expira en tres meses
+
+![](/img/71.png)
+
+Pero es que renovarlo está tirado...
+
+![](/img/72.png)
+
+
+* `--dry-run` es ejecucion en seco, simula qu erenuva los certificados, cerbot te los renueva.
+* Vamos a ver como se hace automaticamente.
+
+
+
+# Linux
+
+## Seguridad
+
+**Consejos de seguridad**
+
+* Cambiar las contraseñas como mucho trimestralmente
+* Cambia los puertos por defecto de los servicios que puedas
+* Oculta los números de versión de los servicios
+* Protege con SSL y autenticación HTTP los accesos de administración de tus plataformas
+* No uses /admin /adm /cms /backend /backoffice (sé original)
+* Usa un firewall
+* Haz copias de seguridad diarias...y haz ensayos de recuperación
+* Mantén actualizado tu software
+* Elimina los humanos: son la mayor brecha de seguridad
+
+Escuchar caso amazon seller video 5.mp4 3:40"
+
+**fail2ban**
+
+* Es un servicio que se encarga de proteger el sistema sobre ataques a diferentes servicios mediante monitorización de los logs (entre otros aspectos).
+* Cuando detecta una amenaza, reacciona baneando la IP del posible atacante.
+* A veces se pasa de protector y nos deja sin acceso a nosotros
+* Es muy sencillo de configurar
+
+```sh
+sudo apt-get install fail2ban
+```
+
+Otra medida de seguridad es no tener el ssh corriendo en el puerto 22, pongo el otro puerto que no sea por defecto. este es un cambio delicado para no perder la máquina
+
+
+![](/img/73.png)
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo nano /etc/ssh/sshd_config
+
+
+# This is the sshd server system-wide configuration file.  See
+# sshd_config(5) for more information.
+
+# This sshd was compiled with PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
+
+# The strategy used for options in the default sshd_config shipped with
+# OpenSSH is to specify options with their default value where
+# possible, but leave them commented.  Uncommented options override the
+# default value.
+
+Include /etc/ssh/sshd_config.d/*.conf
+
+Port 6543 # <---------------------------- aquí le pongo mi puerto nuevo
+#AddressFamily any
+#ListenAddress 0.0.0.0
+#ListenAddress ::
+
+
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl reload ssh
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ logout
+Connection to 34.224.192.130 closed.
+
+# me conecto a ssh a un puerto que no es el por defecto : -p 6543
+➜  FullStack15_Servidores_Despliegue_Aplicaciones git:(main) ✗ ssh -p 6543 -i ../Despliegue_AWS/web15.pem ubuntu@34.224.192.130
+        Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 6.2.0-1018-aws x86_64)
+
+        * Documentation:  https://help.ubuntu.com
+        * Management:     https://landscape.canonical.com
+        * Support:        https://ubuntu.com/advantage
+
+        System information as of Fri Feb 16 11:19:27 UTC 2024
+
+        System load:  0.11962890625     Processes:             110
+        Usage of /:   59.4% of 7.57GB   Users logged in:       0
+        Memory usage: 53%               IPv4 address for eth0: 172.31.39.104
+        Swap usage:   0%
+
+        * Ubuntu Pro delivers the most comprehensive open source security and
+        compliance features.
+
+        https://ubuntu.com/aws/pro
+
+        Expanded Security Maintenance for Applications is not enabled.
+
+        31 updates can be applied immediately.
+        2 of these updates are standard security updates.
+        To see these additional updates run: apt list --upgradable
+
+        Enable ESM Apps to receive additional future security updates.
+        See https://ubuntu.com/esm or run: sudo pro status
+
+
+        Last login: Fri Feb 16 11:16:58 2024 from 85.87.66.72
+```
+
+**Ya te funciona todos los subdominios no por el puerto defecto**
+
+* http://alexjust.duckdns.org/
+* http://chat.alexjust.duckdns.org/
+* http://react.alexjust.duckdns.org/
+* http://parse.alexjust.duckdns.org/parse/classes/Cervezas/
+
+
+> [!IMPORTANT]
+> ELIMINA EL PUERTO 22 DEL SERVIDOR
+
+
+**Para que no muestra la versión por defecto de nginx**
+
+Conecta `# server_tokens off;`
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo nano /etc/nginx/nginx.conf 
+
+
+
+##### NANO #######
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 768;
+        # multi_accept on;
+}
+
+http {
+
+        ##
+        # Basic Settings
+        ##
+
+        sendfile on;
+        tcp_nopush on;
+        types_hash_max_size 2048;
+        server_tokens off; # <------------ Conecta ESTO
+
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx
+```
 
