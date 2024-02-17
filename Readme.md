@@ -386,187 +386,6 @@ Los pipes nos permiten pasar la información de un comando a otro como si fueran
 
 
 
-## Scripting
-
-* La bash permite almacenar comandos en un fichero de texto y ejecutarlos como si fuera programas.
-* Proporciona incluso instrucciones de control de flujo y bucles
-* Los ficheros deben tener permisos de ejecución para poder ser
-tratados como programas.
-* En la primera línea, se ha de indicar cuál es el intérprete que se
-debe utilizar.
-* Podemos utilizar otros lenguajes de scripting (python, php, perl...)
-
-```sh
-#!/bin/bash
-# This is a comment
-echo “My command is called $0\n” echo “The first argument is $1\n” for item in ‘$(ls)’
-do
-echo “- $item\n” done
-```
-
-```sh
-#!/bin/bash para scripts bash o shellscript 
-#!/bin/python para scripts python 
-#!/bin/php para scripts php
-```
-
-**Variables implícitas** 
-
-* **$@** lista de parámetros recibida por el comando
-* **$0** nombre del propio comando/archivo
-* **$1** primer parámetro
-* **$2** segundo parámetro
-...
-* **$n** n-ésimo parámetro
-* **`$?`** resultado de la salida del último comando (0 es OK, !=0 es KO) $$ número de proceso que se ejecuta
-* **$#** número de parámetros recibidos por el comando
-
-
-```sh
-# Definición de variables
-name=“hello” 
-counter=0
-```
-
-```sh
-# Uso de variables
-echo “Hello $name” 
-echo “Hello ${name}” 
-echo “$counter times” 
-echo “${counter} times”
-```
-
-```sh
-# Usando la salida de un comando
-files=$(ls) # Ejecuta el comando ls y guarda su salida en “files” 
-echo $files
-```
-
-
-```sh
-# Condicionales
-
-if <condition> then
-<stuff>
-else
-<otherstuff>
-fi
-```
-
-
-```sh
-# Condiciones de las condicionales
-
-if cp $source $target # si se ejecuta bien cp
-if test -f $source # si $source es un fichero
-if [ -f “$source” ] # si $source es un fichero
-if [ -d “$source” ] # si $source es un directorio if [ -e “$source” ] # si $source existe
-if $source = $target # si $source es igual a $target
-if $source != $target # si $source es distinto a $target
-```
-
-```sh
-# Condiciones de las condicionales: numéricas
-
-if $numA -eq $numB # $numA == $numB 
-if $numA -ne $numB # $numA != $numB 
-if $numA -ge $numB # $numA >= $numB 
-if $numA -gt $numB # $numA > $numB 
-if $numA -le $numB # $numA <= $numB 
-if $numA -lt $numB # $numA < $numB
-```
-
-```sh
-# Case
-
-case <variable> in <value1>)
-<stuff>
-;;
-<value2> | <value3>)
-<otherstuff>
-;; *)
-;; esac
-```
-
-```sh
-# Bucle for
-
-for file in $(ls) 
-do
-    <stuff>
-done
-```
-
-**Salida**
-
-Cuando nuestro programa acaba bien, debe devolver `exit 0`. Si algo va mal, deberemos devolver un número distinto de cero (lo suyo es diferenciar los tipos de error con números).
-
-```sh
-# Funciones
-
-function <name> ()
-{
-    <commands>
-    return <int>
-}
-```
-
-
-**Ejecutar en background**
-
-* **`<command>` &** : Ejecutar en background sin deconexión
-
-ACHTUNG: No vale para ejecutar en segundo plano y desconectarnos. El sistema puede matar el proceso pasado un tiempo.
-
-* **nohup `<command>` &** : Ejecutar en background con desconexión. La posible salida que pueda sacar el comando, la almacenará en un archivo llamado nohup.out
-
-
-**Programando tareas automáticas**
-
-
-El cron
-
-* Todos los sistemas Linux incluyen un programador de tareas: cron
-* Nos permite programar comandos que se ejecuten automáticamente
-* Básicamente, se almacena en un fichero la información de programación y el comando a ejecutar
-* Como máximo podemos ejecutar repetitivamente hasta una vez por minuto
-
-
-**Programando tareas para mi usuario**
-
-* **crontab -e** : 
-
----
-
-![](img/5.png)
-
----
-
-* **sudo nano /etc/crontab** : Programando tareas de sistema
-
----
-![](img/6.png)
-
----
-
-
-**Ejemplo crontab -e**
-
-* `30 10 * * 1 /usr/bin/who >> /home/who.txt` : Todos los lunes a las 10:30
-* `0,30 * * * 1 /usr/bin/who >> /home/who.txt`: Todos los lunes a en punto o a y media de todas las horas
-* `*/15 * * * * /usr/bin/who >> /home/who.txt` : Cada 15 minutos
-* `30 21 * * 6 /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
-
-https://es.wikipedia.org/wiki/Cron_(Unix)
-
-**Ejemplo /etc/crontab** 
-
-
-* `30 10 * * 1 larry /usr/bin/who >> /home/who.txt` : Todos los lunes a las 10:30
-* `0,30 * * * 1 steve /usr/bin/who >> /home/who.txt` : Todos los lunes a en punto o a y media de todas las horas
-* `*/15 * * * * sergei /usr/bin/who >> /home/who.txt` : Cada 15 minutos
-* `30 21 * * 6 root /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
-
 # NGINX
 
 El todo en uno : servidor web, proxy invers y balanceador de carga.
@@ -6141,9 +5960,8 @@ Pero es que renovarlo está tirado...
 
 
 
-# Linux
 
-## Seguridad
+## Seguridad ~ Linux
 
 **Consejos de seguridad**
 
@@ -6169,6 +5987,9 @@ Escuchar caso amazon seller video 5.mp4 3:40"
 ```sh
 sudo apt-get install fail2ban
 ```
+
+**Otra medida de seguridad**
+
 
 Otra medida de seguridad es no tener el ssh corriendo en el puerto 22, pongo el otro puerto que no sea por defecto. este es un cambio delicado para no perder la máquina
 
@@ -6290,3 +6111,996 @@ http {
 ubuntu@ip-172-31-39-104:~$ sudo systemctl reload nginx
 ```
 
+## Scripting
+
+La base de Docker son os scriptins
+
+
+* La bash permite almacenar comandos en un fichero de texto y ejecutarlos como si fuera programas.
+* Proporciona incluso instrucciones de control de flujo y bucles
+* Los ficheros deben tener permisos de ejecución para poder ser
+tratados como programas.
+* En la primera línea, se ha de indicar cuál es el intérprete que se
+debe utilizar.
+* Podemos utilizar otros lenguajes de scripting (python, php, perl...)
+
+```sh
+#!/bin/bash  
+# This is a comment  
+echo “My command is called $0\n” 
+echo “The first argument is $1\n” 
+for item in ‘$(ls)’
+do
+echo “- $item\n” 
+done
+```
+
+```sh
+#!/bin/bash para scripts bash o shellscript 
+#!/bin/python para scripts python 
+#!/bin/php para scripts php
+```
+
+**Variables implícitas** 
+
+* **$@** lista de parámetros recibida por el comando
+* **$0** nombre del propio comando/archivo
+* **$1** primer parámetro
+* **$2** segundo parámetro
+...
+* **$n** n-ésimo parámetro
+* **`$?`** resultado de la salida del último comando (0 es OK, !=0 es KO) $$ número de proceso que se ejecuta
+* **$#** número de parámetros recibidos por el comando
+
+
+```sh
+# Definición de variables
+name=“hello” 
+counter=0
+```
+
+```sh
+# Uso de variables
+echo “Hello $name” 
+echo “Hello ${name}” 
+echo “$counter times” 
+echo “${counter} times”
+```
+
+```sh
+# Usando la salida de un comando
+files=$(ls) # Ejecuta el comando ls y guarda su salida en “files” 
+echo $files
+```
+
+
+```sh
+# Condicionales
+
+if <condition> then
+<stuff>
+else
+<otherstuff>
+fi
+```
+
+
+```sh
+# Condiciones de las condicionales
+
+if cp $source $target # si se ejecuta bien cp
+if test -f $source # si $source es un fichero
+if [ -f “$source” ] # si $source es un fichero
+if [ -d “$source” ] # si $source es un directorio if [ -e “$source” ] # si $source existe
+if $source = $target # si $source es igual a $target
+if $source != $target # si $source es distinto a $target
+```
+
+```sh
+# Condiciones de las condicionales: numéricas
+
+if $numA -eq $numB # $numA == $numB 
+if $numA -ne $numB # $numA != $numB 
+if $numA -ge $numB # $numA >= $numB 
+if $numA -gt $numB # $numA > $numB 
+if $numA -le $numB # $numA <= $numB 
+if $numA -lt $numB # $numA < $numB
+```
+
+```sh
+# Case
+
+case <variable> in <value1>)
+<stuff>
+;;
+<value2> | <value3>)
+<otherstuff>
+;; *)
+;; esac
+```
+
+```sh
+# Bucle for
+
+for file in $(ls) 
+do
+    <stuff>
+done
+```
+
+**Salida**
+
+Cuando nuestro programa acaba bien, debe devolver `exit 0`. Si algo va mal, deberemos devolver un número distinto de cero (lo suyo es diferenciar los tipos de error con números).
+
+```sh
+# Funciones
+
+function <name> ()
+{
+    <commands>
+    return <int>
+}
+```
+
+
+
+Esta secuencia de comandos configura un sitio web en un servidor Nginx utilizando el nombre del sitio y la URL de un repositorio de GitHub como argumentos. Automatiza la configuración de un nuevo sitio en Nginx, la descarga de contenido desde un repositorio de GitHub, y la obtención de un certificado SSL mediante Certbot.
+
+```sh
+#!/bin/bash
+
+site_name=$1
+github_url=$2
+
+
+nginx_content=<<EOL                        # Inicia la definición de un here document que contiene la configuración de nginx
+server {
+        listen 80;                         # Escucha en el puerto 80
+        server_name $1;                    # Usa el primer argumento como nombre del servidor
+        root /var/www/$1;                  # Establece el directorio raíz para los archivos del sitio web
+        index index.html;                  # Define index.html como el archivo a cargar por defecto
+        location  /  {                     # Para todas las peticiones al servidor
+                try_files $uri $uri/ =404; # Intenta servir el archivo solicitado o devuelve 404
+        }
+}
+EOL
+
+# Actualiza la lista de paquetes
+apt update                                              && \ 
+# Actualiza los paquetes instalados
+apt upgrade -y                                          && \
+# Instala nginx, git, certbot y su plugin para nginx
+apt install -y nginx git certbot python3-certbot-nginx  && \
+# Crea el directorio raíz para el sitio web
+mkdir -p /var/www/$1                                    && \
+# Clona el repositorio de GitHub en el directorio del sitio web
+git clone $2 /var/www/$1                                && \
+# Crea un archivo de configuración de nginx para el sitio
+echo $nginx_content > /etc/nginx/sites-enabled/$1       && \
+# Comprueba la sintaxis de los archivos de configuración de nginx
+nginx -t                                                && \
+# Recarga la configuración de nginx
+systemctl reload nginx                                  && \
+# Ejecuta certbot para obtener y configurar automáticamente un certificado SSL para el sitio
+certbot --nginx -d $1 -n
+
+exit 0  # Sale del script con estado de éxito
+```
+
+
+Este script es útil para verificar rápidamente el contenido de un directorio especificado, indicando si cada elemento dentro de ese directorio es un archivo o un directorio. Es importante notar que el script no maneja espacios en los nombres de los archivos o directorios; si hay nombres de archivos o directorios con espacios, el script puede no comportarse como se espera.
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo nano mils
+```
+
+```sh
+#!/bin/bash
+
+dir_path=$1
+
+# si el numero de parametros es menor que uno, da un error
+if [ $# -lt 1 ]
+then
+    echo "Tienes que indicar al menos una ruta absoluta"
+    exit 1
+fi
+
+# si me han pasado un parametro, compruebo que la ruta existe
+if [ ! -e $dir_path ]
+then
+    echo "La ruta $1 no existe"
+    exit 2
+fi
+
+# obtener el listado de archivos y carpetas del directorio indicado
+files=$(ls $dir_path)
+
+# recorremos los nombres de los archivos y carpetas para indicar si es un archivo o carpeta
+for file in $files
+do
+    # comprobamos si es un directorio
+    if [ -d $dir_path/$file ]
+    then
+        echo "$file es un directorio"
+    else
+        echo "$file es un archivo"
+    fi
+done
+
+exit 0
+```
+
+Para ejecutar los scripts por consola sin permisos, si el script se llama `mils`
+
+```sh
+bash ./mils
+
+# para ver si es un directorio, le pasas el path
+./mils /var
+```
+
+Para que esté disponible para todos losusuarios del sistema lo metemos en `/usr/local/bin` porque esto es un comando local, no es del standard de linux
+
+```sh
+ubuntu@ip-172-31-39-104:/usr/local/bin$ echo $PATH
+/usr/local/sbin:`/usr/local/bin`:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+```
+
+lo más correcto es moterlo aquí `/usr/local/sbin:`/usr/local/bin`:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin`
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo mv mils /usr/local/bin
+ubuntu@ip-172-31-39-104:~$ cd /usr/local/bin
+ubuntu@ip-172-31-39-104:/usr/local/bin$ sudo chmod +x /usr/local/bin/mils
+ubuntu@ip-172-31-39-104:/usr/local/bin$ bash mils /var/www
+        html es un directorio
+        react-todo es un directorio
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ mils /var/log
+alternatives.log es un archivo
+amazon es un directorio
+apt es un directorio
+auth.log es un archivo
+auth.log.1 es un archivo
+btmp es un archivo
+chrony es un directorio
+cloud-init-output.log es un archivo
+cloud-init.log es un archivo
+dist-upgrade es un directorio
+dmesg es un archivo
+dmesg.0 es un archivo
+dmesg.1.gz es un archivo
+dmesg.2.gz es un archivo
+dmesg.3.gz es un archivo
+dpkg.log es un archivo
+journal es un directorio
+kern.log es un archivo
+kern.log.1 es un archivo
+landscape es un directorio
+lastlog es un archivo
+letsencrypt es un directorio
+mongodb es un directorio
+nginx es un directorio
+private es un directorio
+supervisor es un directorio
+syslog es un archivo
+syslog.1 es un archivo
+ubuntu-advantage.log es un archivo
+unattended-upgrades es un directorio
+wtmp es un archivo
+ubuntu@ip-172-31-39-104:~$ 
+```
+
+**EJECUTAR EN BACKGROUND**
+
+**Ejecutar en background sin desconexión**
+
+* **`<command>` &** : Ejecutar en background sin deconexión
+
+Cualquier programa que ejecutemos con `&` quiere decir, envíalo a background. Nos sale por pantalla el id del proceso y eso se pone a ejecutar
+
+ACHTUNG: No vale para ejecutar en segundo plano y desconectarnos. El sistema puede matar el proceso pasado un tiempo.
+
+Imaginate un script en node que tardará tres horas
+
+* **nohup `<command>` &** : Ejecutar en background con desconexión. 
+  
+La posible salida que pueda sacar el comando, la almacenará en un archivo llamado nohup.out
+
+
+```sh
+#!/bin/bash
+echo "Hola mundo. me duermo..."
+sleep 5
+echo "...me desperté!"
+
+exit 0
+```
+
+```sh
+ubuntu@ip-172-31-39-104:~$ sudo chmod +x ejemplo-background.sh
+ubuntu@ip-172-31-39-104:~$ ./ejemplo-background.sh 
+Hola mundo. me duermo...
+...me desperté!
+ubuntu@ip-172-31-39-104:~$ 
+
+# imaginate que targa 5 horas no 5 segundo
+
+ubuntu@ip-172-31-39-104:~$ ./ejemplo-background.sh & # lo ejecuto con &
+[1] 94957                                            # me da el ide del proceso
+ubuntu@ip-172-31-39-104:~$ Hola mundo. me duermo...  # ejecuta
+
+ubuntu@ip-172-31-39-104:~$ frfrf                     # pero me deja libre la consola
+frfrf: command not found
+ubuntu@ip-172-31-39-104:~$ frfrf                     # pero me deja libre la consola
+frfrf: command not found
+ubuntu@ip-172-31-39-104:~$ ...me desperté!           # ejecuta
+[1]+  Done                    ./ejemplo-background.sh
+```
+
+
+**PROGRAMANDO TAREAS AUTOMÁTICAS**
+
+
+El `cron`
+
+* Todos los sistemas Linux incluyen un programador de tareas: cron
+* Nos permite programar comandos que se ejecuten automáticamente
+* Básicamente, se almacena en un fichero la información de programación y el comando a ejecutar
+* Como máximo podemos ejecutar repetitivamente hasta una vez por minuto
+
+
+**Programando tareas para mi usuario**
+
+* **crontab -e** : 
+
+---
+Para taereas de tu usuario, correrá con los permisos de tu usuario:
+
+![](img/5.png)
+
+---
+
+
+
+**Programando tareas de sistema :**
+
+Hay que editar este fichero
+
+`sudo nano /etc/crontab` Hay que decir qué usuario correrá el sistema
+
+Ejemplo `crontab -e`
+
+* `30 10 * * 1 /usr/bin/who >> /home/who.txt` : Todos los lunes a las 10:30
+* `0,30 * * * 1 /usr/bin/who >> /home/who.txt`: Todos los lunes a en punto o a y media de todas las horas
+* `*/15 * * * * /usr/bin/who >> /home/who.txt` : Cada 15 minutos
+* `30 21 * * 6 /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
+
+https://es.wikipedia.org/wiki/Cron_(Unix)
+
+
+![](img/6.png)
+
+---
+
+
+
+Ejemplo `/etc/crontab`
+
+
+* `30 10 * * 1 larry /usr/bin/who >> /home/who.txt` : Todos los lunes a las 10:30
+* `0,30 * * * 1 steve /usr/bin/who >> /home/who.txt` : Todos los lunes a en punto o a y media de todas las horas
+* `*/15 * * * * sergei /usr/bin/who >> /home/who.txt` : Cada 15 minutos
+* `30 21 * * 6 root /sbin/shutdown -h now` : Apaga el servidor los sábados a las 21:30. Sólo lo podría hacer root.
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ cat /etc/crontab
+# /etc/crontab: system-wide crontab
+# Unlike any other crontab you don't have to run the `crontab'
+# command to install the new version when you edit this file
+# and files in /etc/cron.d. These files also have username fields,
+# that none of the other crontabs do.
+
+SHELL=/bin/sh
+# You can also override PATH, but by default, newer versions inherit it from the environment
+#PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+17 *	* * *	root    cd / && run-parts --report /etc/cron.hourly
+25 6	* * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+47 6	* * 7	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+52 6	1 * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+#
+
+```
+
+Este script se utiliza típicamente en entornos donde se necesita asegurar que no se ejecute más de una instancia del mismo proceso al mismo tiempo. Se crea un archivo de "bandera" al inicio del script para indicar que está en ejecución, y luego se elimina este archivo al final para indicar que el proceso ha concluido. Esto es útil, por ejemplo, en scripts programados con cron para evitar la superposición de ejecuciones.
+
+```sh
+ubuntu@ip-172-31-39-104:~$ nano cron.sh
+
+
+#### NANO ####
+#!/bin/bash 
+
+RUN_FLAG=/home/ubuntu/.cron.sh-flag  # Define una variable RUN_FLAG con la ruta de un archivo que actúa como bandera.
+
+if [ -f $RUN_FLAG ]  # Comprueba si el archivo definido por RUN_FLAG existe.
+then
+    echo "Ya hay un proceso ejecutando"  # Imprime un mensaje indicando que ya hay un proceso en ejecución.
+    exit 1  # Sale del script con un código de salida 1, indicando un error.
+fi  # Fin de la condición if.
+
+touch $RUN_FLAG  # Crea el archivo definido por RUN_FLAG, o actualiza su marca de tiempo si ya existe.
+
+echo "Ejecutando desde cron" >> /home/ubuntu/resultado-cron  # Añade un mensaje a un archivo indicando que el script se está ejecutando desde cron.
+date >> /home/ubuntu/resultado-cron  # Añade la fecha y hora actual al mismo archivo.
+sleep 90  # Pausa la ejecución del script durante 90 segundos.
+
+rm $RUN_FLAG  # Elimina el archivo definido por RUN_FLAG, indicando que el proceso ha terminado.
+
+exit 0  # Sale del script con un código de salida 0, indicando éxito.
+
+```
+
+Cómo lo programo?
+
+```sh
+ubuntu@ip-172-31-39-104:~$ crontab -e
+no crontab for ubuntu - using an empty one
+
+Select an editor.  To change later, run 'select-editor'.
+  1. /bin/nano        <---- easiest
+  2. /usr/bin/vim.basic
+  3. /usr/bin/vim.tiny
+  4. /bin/ed
+
+Choose 1-4 [1]: # te pregunta a qué hora, enter es a cualquier hora.
+
+
+# Edit this file to introduce tasks to be run by cron.
+# 
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+# 
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+# 
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+# 
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+# 
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+# 
+# For more information see the manual pages of crontab(5) and cron(8)
+# 
+# m h  dom mon dow   command
+  * *   *   *   *    /home/ubuntu/cron.sh     # <------ ESTO HAS DE AÑADIR SEGÚN TU ARCHIVO
+```
+
+
+```sh
+ubuntu@ip-172-31-39-104:~$ chmod +x cron.sh
+# ejecutarlo debe crear un archivo resultado-cron
+ubuntu@ip-172-31-39-104:~$ ./cron.sh 
+ubuntu@ip-172-31-39-104:~$ ls -l
+        total 12
+        -rwxrwxr-x 1 ubuntu ubuntu 272 Feb 16 18:22 cron.sh
+        -rwxr-xr-x 1 root   root    84 Feb 16 17:18 ejemplo-background.sh
+        -rw-rw-r-- 1 ubuntu ubuntu  51 Feb 16 18:31 resultado-cron
+ubuntu@ip-172-31-39-104:~$ cat resultado-cron 
+        Ejecutando desde cron
+        Fri Feb 16 18:31:32 UTC 2024
+ubuntu@ip-172-31-39-104:~$ 
+ubuntu@ip-172-31-39-104:~$ rm ejemplo-background.sh resultado-cron 
+ubuntu@ip-172-31-39-104:~$ ls
+cron.sh
+ubuntu@ip-172-31-39-104:~$ date
+        Fri Feb 16 18:37:10 UTC 2024
+
+```
+
+
+# Docker
+
+¿Qué es Docker?
+
+* Es una plataforma para desarrollar, distribuir y poner en marcha aplicaciones usando la una tecnología de virtualización: contenedores.
+* Sólo se puede utilizar en sistemas Linux, aunque podemos utilizarlo en Mac OS X y Windows utilizando máquinas virtuales.
+* Para producción: tendremos que utilizar Linux.
+
+**Virtualización de contenedores***
+
+* Es una tecnología propia de Linux (no es de Docker)
+* Vistos desde fuera, los contenedores son como máquinas virtuales
+* Cada contenedor tiene su propio sistema de ficheros, procesos, memoria y puertos de red (como una máquina virtual).
+* La diferencia es que utilizan el kernel del sistema operativo sobre el que se crean (todos los Linux usan el mismo kernel)
+* Por eso son mucho más ligeros que una máquina virtual
+
+
+**Máquinas Virtuales vs Contenedores**
+
+![](/img/74.png)
+
+**Contenedores vs. Contenedores con Docker**
+
+![](/img/75.png)
+
+**Beneficios de Docker**
+
+* Los desarrolladores pueden montar sus aplicaciones en contenedores.
+* Los DevOps sólo deben encargarse de desplegar contenedores (no tienen que saber cómo funciona una aplicación dentro de un contenedor para que funcione).
+* Mayor portabilidad de una aplicación y mayor escalabilidad
+* Más aplicaciones en un host que con máquinas virtuales
+
+
+**¿Cómo funciona Docker?**
+
+![](/img/76.png)
+
+![](/img/77.png)
+
+**El cliente de Docker**
+
+* Docker CLI: Command Line Interface / Consola de comandos.
+
+
+**Imágenes y contenedores**
+
+¿Qué son las imágenes?
+
+* Son plantillas para crear contenedores (un contenedor es una app funcionando ya), para crear un contendor necesito una imagen. Cuando instalas la ISO por ejemplo de windows estás instalando la imagen, el ISO es las imagenes de docker. Cuando instalas las ISOS es lo mismo que docker ejecutar un contendor.
+* Son de sólo lectura (no podemos modificarlas)
+* Las creamos nosotros u otros usuarios de Docker
+* Se almacenan en repositorios (y éstos en un registro)
+* Docker Hub es un registro público de Docker (es como github pero de docker) Tu puedes tenerlo ahí, pero si es tuyo privado puedes descargarlo tu con unas credenciales.
+
+¿Qué son los contenedores?
+
+* Son una o más imágenes siendo ejecutadas
+* Unidades de ejecución aisladas con su propio espacio de memoria, procesos, sistema de red y sistema de archivos
+
+
+**Docker hub**
+
+
+* Registro público oficial de repositorios de Docker
+* Podemos encontrar imágenes oficiales de los principales proyectos open source: Ubuntu, Nginx, node, etc.
+* Generalmente, basaremos nuestras imágenes en imágenes oficiales de Docker Hub para crear nuestras aplicaciones.
+* Es gratis 
+
+https://hub.docker.com
+
+--- 
+
+Todo l oque viene pasa en mi ordenador, enmi máquina local
+
+```sh
+➜  ~ docker ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED      STATUS         PORTS     NAMES
+8d39e94b8d3d   node:latest   "/bin/sh -c 'echo Co…"   7 days ago   Up 3 seconds             hardcore_williams
+```
+
+Tengo ejecutando un contenedor en mi máquina local, he abierto docker y he arrancado un contendor.
+
+¿como ejecuto un contenedor? con el nombre de la imagen descargada en tu ordenador `hello-world`, como no la encuentra la descarga
+
+```sh
+➜  ~ docker run hello-world
+        Unable to find image 'hello-world:latest' locally
+        latest: Pulling from library/hello-world
+        c1ec31eb5944: Pull complete 
+        Digest: sha256:d000bc569937abbe195e20322a0bde6b2922d805332fd6d8a68b19f524b7d21d
+        Status: Downloaded newer image for hello-world:latest
+
+        Hello from Docker!
+        This message shows that your installation appears to be working correctly.
+
+        To generate this message, Docker took the following steps:
+        1. The Docker client contacted the Docker daemon.
+        2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+        (amd64)
+        3. The Docker daemon created a new container from that image which runs the
+        executable that produces the output you are currently reading.
+        4. The Docker daemon streamed that output to the Docker client, which sent it
+        to your terminal.
+
+        To try something more ambitious, you can run an Ubuntu container with:
+        $ docker run -it ubuntu bash
+
+        Share images, automate workflows, and more with a free Docker ID:
+        https://hub.docker.com/
+
+        For more examples and ideas, visit:
+        https://docs.docker.com/get-started/
+```
+
+```sh
+➜  ~ docker ps             
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+➜  ~ 
+```
+Este contenedor ha saludado y se ha cerrado. No ha continuado con el proceso. **Cuando el proceso termina el contendor se cierra**. Puedes arrancar los procesos que quieras pero cuando el principal termine se acabó contendr.
+
+
+```sh
+# viendo todas las imagenes en mi local
+➜  ~ docker images
+REPOSITORY              TAG               IMAGE ID       CREATED        SIZE
+node                    latest            8d6c41e6504f   2 weeks ago    1.1GB
+twitter-react           latest            9035ea1a9228   2 months ago   47.4MB
+<none>                  <none>            ceb2c5247302   2 months ago   47.4MB
+mongo                   latest            021b676f1558   3 months ago   757MB
+rabbitmq                3.12-management   7c996351c19b   8 months ago   246MB
+hello-world             latest            d2c94e258dcb   9 months ago   13.3kB
+davidjj76/nodepop-api   latest            f7a2142dfc1d   2 years ago    225MB
+mikesplain/openvas      latest            889967897c49   4 years ago    6.39GB
+```
+
+```sh
+# te borra todas las imagenes que no usas de docker
+docker system prune
+```
+
+Con `docker ps -a` puedes **ver incluso el comando que lo arranca** `COMMAND`
+
+```sh
+➜  ~ docker ps -a 
+CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS                      PORTS                                                    NAMES
+91d857226121   hello-world            "/hello"                 8 minutes ago   Exited (0) 8 minutes ago                                                             recursing_cohen
+8d39e94b8d3d   node:latest            "/bin/sh -c 'echo Co…"   7 days ago      Exited (0) 9 minutes ago                                                             hardcore_williams
+610759fa1d76   mongo:latest           "docker-entrypoint.s…"   2 months ago    Exited (0) 2 months ago                                                              some-mongo
+fa718dcb0fd2   twitter-react:latest   "/docker-entrypoint.…"   2 months ago    Exited (0) 2 months ago                                                              affectionate_johnson
+6baac60e6bdd   ceb2c5247302           "/docker-entrypoint.…"   2 months ago    Exited (1) 2 months ago                                                              dreamy_williams
+fdbf20ef33c9   ceb2c5247302           "/docker-entrypoint.…"   2 months ago    Exited (1) 2 months ago                                                              wonderful_almeida
+dcf619d35520   mikesplain/openvas     "/bin/sh -c /start"      3 months ago    Exited (255) 2 months ago   0.0.0.0:443->443/tcp, 0.0.0.0:9390-9391->9390-9391/tcp   openvas
+```
+
+**Si quieres parar un contenedor**
+
+```sh
+# es lo mismo
+docker stop hello-world
+docker stop 91d857226121
+```
+
+**ese contenedor ya está parado, pero y un contenedor que he parado. Lo puedo volver a levantar.**
+
+```sh
+# ver todos los parados
+docker ps -a
+
+docker start hello-world
+docker start 91d857226121
+```
+
+**Descargar una imagen concreta**
+
+https://hub.docker.com/_/mongo un `docker pull mongo`
+
+pero si quieres una version concreta
+
+---
+![](/img/34.png)
+
+---
+
+**Ejecutar un contenedor a partir de una imagen**
+
+`docker run <image>:<tag> <command>`
+
+Al terminar de ejecutar el comando, el contenedor finaliza (termina)
+
+**Ejecutar un contenedor y acceder a su terminal**
+
+`docker run -t -i run <image>:<tag> /bin/bash`
+
+`-i` conecta a la entrada estándar STDIN del contened (para poder teclear)  
+`-t` solicita coger un pseudo-terminal
+
+Aunque hagamos cambios en un contenedor, cuando finalice su ejecución no se guardarán dichos cambios.
+
+**Procesos de un contenedor**
+
+Cuando ejecutamos un contenedor, el comando que le pasamos se ejecuta con PID 1 (dentro del contenedor).
+
+Este proceso podemos verlo desde nuestro sistema, aparecerá como proceso hijo del proceso docker.
+
+**Cómo puedo mi propia imagen?? mipropia app**
+
+```sh
+➜  ~ cd Desktop 
+➜  Desktop git clone https://github.com/parse-community/parse-server-example.git
+        Cloning into 'parse-server'...
+        remote: Enumerating objects: 30201, done.
+        remote: Counting objects: 100% (840/840), done.
+        remote: Compressing objects: 100% (405/405), done.
+        remote: Total 30201 (delta 621), reused 596 (delta 433), pack-reused 29361
+        Receiving objects: 100% (30201/30201), 36.28 MiB | 7.62 MiB/s, done.
+        Resolving deltas: 100% (22524/22524), done.
+➜  Desktop 
+```
+
+Me he clonado un servidor que abro con VSC
+
+> [!NOTE]
+> ¿Qué es necesario e indispensable para poder crear un contenedro de una aplicación de node?  
+> NODE  
+> Siempre para crear una imagen de docker te tienes que basar en una imagen ya existente.
+
+
+Abro con VSC 'parse-server'
+
+**Cómo creo un contenedor de una aplicacion node**
+
+Voy a DockerHub y busco node 
+
+![](/img/78.png)
+
+---
+
+Me instalo la 18 que es la que funciona con la app, allí buscas la version que toque y la pides en el archivo de configuración `Dockerfile` 
+
+![](/img/79.png)
+
+Los pasos de aquí es como el script anterior, es como un ubuntu que tiene instalado node. ¿Qué pasos tendríamos que dar para desplegar mi app?
+
+> [!NOTE]
+> **Principio de Privilegio Mínimo**
+>
+>Crear y usar un usuario específico dentro de un contenedor Docker, en lugar de utilizar el usuario `root`, es una práctica recomendada por motivos de seguridad. Esto se debe a que limita los privilegios del proceso que se ejecuta dentro del contenedor, reduciendo los riesgos asociados con posibles vulnerabilidades de seguridad.
+>
+>**Seguridad Mejorada**
+>
+>- **Limita Riesgos**: Al ejecutar tu aplicación como un usuario no privilegiado (`pepe` en este caso), minimizas los riesgos de seguridad en caso de que tu aplicación sea comprometida.
+>- **Control Total**: Si un atacante logra explotar una vulnerabilidad en tu aplicación que se ejecuta como `root`, podría tener control total sobre el contenedor, lo cual es más peligroso que si el atacante se encuentra limitado por los privilegios de un usuario no privilegiado.
+>
+>**Limitación de Acceso**
+>
+>- Un usuario no privilegiado tiene restricciones en cuanto a lo que puede hacer dentro del contenedor (y, por extensión, en el host si se escapa del contenedor). Esto significa que incluso si un atacante compromete el proceso de la aplicación, sus capacidades para realizar acciones maliciosas están limitadas.
+>
+>**Operaciones Seguras**
+>
+>Para operaciones que no requieren privilegios de `root`, como ejecutar una aplicación web, escuchar en puertos altos (por encima del 1024), acceder a recursos específicos del usuario, etc., un usuario no privilegiado es suficiente y recomendado.
+>
+>**Cumplimiento y Mejores Prácticas**
+>
+>- Muchas guías de seguridad y cumplimiento recomiendan ejecutar servicios como usuarios no privilegiados para reducir la superficie de ataque. Esto es especialmente importante en entornos de producción donde la seguridad es una preocupación primordial.
+>
+>**Implementación en Docker**
+>
+>- **Construcción de Imágenes**: Especificar y utilizar un usuario no privilegiado para la ejecución de la aplicación es una forma de adherirse a estas prácticas recomendadas de seguridad.
+>- **Ejecución de Contenedores**: El proceso principal del contenedor (por ejemplo, tu aplicación Node.js) se ejecutará como ese usuario, mejorando la seguridad general del contenedor y del sistema anfitrión.
+>
+>En resumen, el usuario `pepe` dentro de tu contenedor no está solo para construir el contenedor, sino para asegurar que el proceso de tu aplicación se ejecute con privilegios limitados.
+
+
+```Dockerfile
+############################################################
+# Build stage
+############################################################
+FROM node:18-slim 
+
+# dentro del contenedor preparo un sitio con mi codigo
+# con RUN ejecuta el comando posterior a RUN
+# me creo una carpeta dir
+RUN mkdir /code
+
+# donde quiero que pasen las cosas
+WORKDIR /code
+
+# descargar el codigo, pero lo que hacemos es copiar el codigo desde donde estoy "."
+# que es en la que está el archivo dockerfile a la carpeta /code del contenedor /code
+# esto crea todos los archivos con el usuario root
+COPY . /code
+
+# Crea un grupo y usuario 'pepe'
+RUN groupadd -r pepe && useradd --no-log-init -r -g pepe pepe
+
+# cambio usuario para que el usuario pepe sea propietario de todo lo que hay dentro 
+# de la carpeta /code
+RUN chown -R pepe:pepe /code
+
+# instalamos dependencias
+RUN npm i
+
+# Exponer el puerto donde se ejecuta el contenedor
+EXPOSE 1337
+
+# Crear usuario para cuando arranque el contenedor
+# ¿con qué uduario se ejecutará? No es recomendable con Root
+USER pepe 
+
+# si no decimos nada más arrancará con un comando
+# le decimos cuando alguien haga "docker run parse" con qué comando se arranca todo
+CMD [ "npm", "start" ]
+```
+
+
+**¿ Cómo construyo el contenedor ?**
+
+
+```sh
+# a docker build  le has de poner un tag, le pondré parse-web15
+# y en qué carpeta quier hacer el build "." en a que estoy
+# bucará el archivo dockerfile y sus instruciones
+docker build -t parse-web15 .
+
+# comprueba que no tengas alguna imagen que se llame parse
+docker images
+```
+
+```sh
+➜  parse-server-example git:(master) docker build -t parse-web15 .
+        [+] Building 58.2s (10/10) FINISHED
+        docker:desktop-linux
+        => [internal] load build definition from Dockerfile       
+        => => transferring dockerfile:  0.0s
+        => [internal] load .dockerignore  
+        => => transferring context: 2B   
+        => [internal] load metadata for docker.io/library/node:latest                 
+        => [1/5] FROM docker.io/library/node:latest                
+        => [internal] load build context        
+        => => transferring context: 1.68MB          
+        => [2/5] RUN mkdir parse                 
+        => [3/5] ADD . /parse            
+        => [4/5] WORKDIR /parse                  
+        => [5/5] RUN npm install           
+        => exporting to image                
+        => => exporting layers              
+        => => writing image sha256:7ca7573cec278a91b6137c0fc578a12d62530b30c5917cd4aded0b782bc9f748   
+        => => naming to docker.io/library/parse-web15           
+                                                                                                                                                      
+What's Next?                                                                                                                                          
+  View a summary of image vulnerabilities and recommendations → docker scout quickview
+```
+```sh
+➜  parse-server-example git:(master) docker images
+REPOSITORY              TAG               IMAGE ID       CREATED         SIZE
+parse-web15             latest            7ca7573cec27   4 minutes ago   1.32GB # <-- Aquí
+node                    latest            8d6c41e6504f   2 weeks ago     1.1GB
+twitter-react           latest            9035ea1a9228   2 months ago    47.4MB
+<none>                  <none>            ceb2c5247302   2 months ago    47.4MB
+mongo                   latest            021b676f1558   3 months ago    757MB
+rabbitmq                3.12-management   7c996351c19b   8 months ago    246MB
+hello-world             latest            d2c94e258dcb   9 months ago    13.3kB
+davidjj76/nodepop-api   latest            f7a2142dfc1d   2 years ago     225MB
+mikesplain/openvas      latest            889967897c49   4 years ago     6.39GB
+➜  parse-server-example git:(master) 
+```
+
+```sh
+➜  parse-server-example git:(master) docker run parse-web15
+
+> parse-server-example@1.2.3 start
+> node index.js
+
+warn: DeprecationWarning: The Parse Server option 'allowClientClassCreation' default will change to 'false' in a future version.
+warn: DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.
+warn: DeprecationWarning: The Parse Server option 'encodeParseObjectInCloudFunction' default will change to 'true' in a future version.
+MongoParseError: Invalid scheme, expected connection string to start with "mongodb://" or "mongodb+srv://"
+    at new ConnectionString (/parse/node_modules/mongodb-connection-string-url/lib/index.js:86:19)
+    at parseOptions (/parse/node_modules/parse-server/node_modules/mongodb/lib/connection_string.js:209:17)
+    at new MongoClient (/parse/node_modules/parse-server/node_modules/mongodb/lib/mongo_client.js:44:63)
+    at MongoClient.connect (/parse/node_modules/parse-server/node_modules/mongodb/lib/mongo_client.js:213:33)
+    at MongoStorageAdapter.connect (/parse/node_modules/parse-server/lib/Adapters/Storage/Mongo/MongoStorageAdapter.js:148:42)
+    at MongoStorageAdapter._schemaCollection (/parse/node_modules/parse-server/lib/Adapters/Storage/Mongo/MongoStorageAdapter.js:195:17)
+    at MongoStorageAdapter.getAllClasses (/parse/node_modules/parse-server/lib/Adapters/Storage/Mongo/MongoStorageAdapter.js:379:17)
+    at SchemaController.setAllClasses (/parse/node_modules/parse-server/lib/Controllers/SchemaController.js:812:28)
+    at SchemaController.getAllClasses (/parse/node_modules/parse-server/lib/Controllers/SchemaController.js:809:17)
+node:internal/process/esm_loader:34
+      internalBinding('errors').triggerUncaughtException(
+                                ^
+
+MongoParseError: Invalid scheme, expected connection string to start with "mongodb://" or "mongodb+srv://"
+    at new ConnectionString (/parse/node_modules/mongodb-connection-string-url/lib/index.js:86:19)
+    at parseOptions (/parse/node_modules/parse-server/node_modules/mongodb/lib/connection_string.js:209:17)
+    at new MongoClient (/parse/node_modules/parse-server/node_modules/mongodb/lib/mongo_client.js:44:63)
+    at MongoClient.connect (/parse/node_modules/parse-server/node_modules/mongodb/lib/mongo_client.js:213:33)
+    at MongoStorageAdapter.connect (/parse/node_modules/parse-server/lib/Adapters/Storage/Mongo/MongoStorageAdapter.js:148:42)
+    at MongoStorageAdapter._schemaCollection (/parse/node_modules/parse-server/lib/Adapters/Storage/Mongo/MongoStorageAdapter.js:195:17)
+    at MongoStorageAdapter.getAllClasses (/parse/node_modules/parse-server/lib/Adapters/Storage/Mongo/MongoStorageAdapter.js:379:17)
+    at SchemaController.setAllClasses (/parse/node_modules/parse-server/lib/Controllers/SchemaController.js:812:28)
+    at SchemaController.getAllClasses (/parse/node_modules/parse-server/lib/Controllers/SchemaController.js:809:17)
+
+Node.js v21.6.1
+➜  parse-server-example git:(master) 
+```
+
+
+Parse necesita mongo. Si quiero que el contenedor seq 100% que el usuario se la descargue y ya, entonces necesitamos mongo dentro del contenedor. Pero tbn podemos hacer que se descargue mi imagen de parse y que también se descargue una imagen de docker y hacemos que se conecten, para eso está `docker componse` es una estructura de contenedores y como se conectan entre si 
+
+aquí te explica como configurar https://hub.docker.com/_/mongo 
+
+`docker-compose.yml`
+
+```python
+version: '3.1'  # Especifica la versión de la sintaxis de Docker Compose que se está utilizando.
+
+services:  # Inicia la definición de los servicios que compondrán tu aplicación.
+
+  mongodb:  # Define un servicio llamado "mongodb".
+    container_name: mongodb  # Asigna un nombre fijo al contenedor para este servicio.
+    image: mongo:7-jammy  # Especifica la imagen de Docker a utilizar para el contenedor, 
+    restart: always  # Configura el contenedor para que siempre se reinicie si se detiene.
+    volumes:  # Inicia la definición de volúmenes para el contenedor.
+      - './mongo-data:/data/db'  # Monta un volumen desde ./mongo-data en el host a /data/db dentro del contenedor
+    environment:  # Inicia la definición de variables de entorno para el contenedor.
+      ME_CONFIG_MONGODB_ADMINUSERNAME: mongo  # Establece el nombre de usuario administrador de MongoDB.
+      ME_CONFIG_MONGODB_ADMINPASSWORD: mongo  # Establece la contraseña del administrador de MongoDB.
+
+  parse:  # Define otro servicio llamado "parse".
+    container_name: parse  # Asigna un nombre fijo al contenedor para este servicio.
+    image: parse-web15:latest  # Especifica imagen de Docker a utilizar para el contenedor,
+    restart: always  # Configura el contenedor para que siempre se reinicie si se detiene.
+    environment:  # Inicia la definición de variables de entorno para el contenedor.
+      DATABASE_URI: mongodb://mongo:mongo@mongodb:27017/admin  # Proporciona la cadena de conexión a MongoDB, usando las credenciales definidas y apuntando al servicio "mongodb" definido anteriormente.
+    ports:  # Inicia la definición de mapeo de puertos para el contenedor.
+      - '1377:1337'  # Mapea puerto 1337 en contenedor al puerto 1377 en el host, permitiendo el acceso externo al servicio Parse.
+    depends_on:  # Define las dependencias de este servicio.
+      - mongodb  # Indica q servicio "parse" depende del servicio "mongodb", asegurando que "mongodb" se inicie primero.
+```
+
+Para levantar los archivos definidor en un docker-compose 
+
+```sh
+docker-compose up
+```
+
+```sh
+# para ver que está arrancado
+docker ps
+```
+
+Cuando ejecutas el comando `docker-compose up`, Docker Compose realiza las siguientes acciones según la configuración especificada en tu archivo `docker-compose.yml`:
+
+1. **Leer el archivo `docker-compose.yml`**:
+   Comienza por leer la configuración de los servicios, volúmenes y redes definidos.
+
+2. **Construir las imágenes (si es necesario)**:
+   Si se especifica con `build`, construye las imágenes necesarias. En el caso de usar imágenes preexistentes (`mongo:7-jammy` y `parse-web15:latest`), este paso se omite.
+
+3. **Crear y configurar volúmenes**:
+   Configura los volúmenes especificados, como `./mongo-data:/data/db` para MongoDB, importante para la persistencia de datos.
+
+4. **Crear y configurar redes**:
+   Establece una red propia para los servicios definidos, permitiendo la comunicación interna usando los nombres de los servicios como hostnames.
+
+5. **Iniciar los contenedores en el orden correcto**:
+   Asegura que los servicios se inicien en el orden definido por `depends_on`, por ejemplo, `mongodb` antes de `parse`.
+
+6. **Establecer variables de entorno**:
+   Configura las variables de entorno para cada servicio, como las credenciales de MongoDB y la cadena de conexión en el servicio `parse`.
+
+7. **Mapear puertos**:
+   Mapea los puertos de los contenedores al host, permitiendo el acceso externo a los servicios, como mapear el puerto `1337` de `parse` al puerto `1377` del host.
+
+8. **Iniciar los servicios**:
+   Los servicios se inician, mostrando la salida de los contenedores en la terminal si se ejecuta en modo foreground.
+
+Para ejecutar los servicios en modo detached (en el fondo) y liberar la terminal, puedes usar:
+
+```sh
+docker-compose up -d
+```
+
+Te irías a http://localhost:1337/parse/classes/Cervezas de VSC y te permitiría crear la base de datos 
