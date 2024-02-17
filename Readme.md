@@ -7104,3 +7104,59 @@ docker-compose up -d
 ```
 
 Te irías a http://localhost:1337/parse/classes/Cervezas de VSC y te permitiría crear la base de datos 
+
+
+¿como podemos entrar dentro de un contenedor?
+
+```sh
+# donde quiero ejecutar el comando en parse
+# ejecuta el comando date dentro de parse
+docker-compose exec parse date
+
+# como podría ejecutar comandos dentro de parse
+docker-compose exec parse bash
+# te mete dentro con todas las carpetas del programa parse
+```
+
+--
+**FIN** --
+
+---
+
+# Dejando la cuenta de AWS sin facturar
+
+Si en tu instancia le dices `Terminar` no es lo mismo qu parar. Terminar es `Borrarla`
+
+Si al borrar una instancia el disco duro no se ha eliminado, cuando pase un año si el disco duro sigue ahí, Amazon me cobrará por ese disco duro.
+
+![](/img/80_.png)
+
+Los discos duros están en `Elastic Block Store` / `Volumes` si no hay ninguno es que ya se ha eliminado, antes no se eliminaba automaticamente 
+
+
+También un ojo a los `Elastic Block Store` / `Snapshots` porqye te los van a cobrar 
+
+
+Elimina también la `Elastic ip` AWS te la cobrará: Release Elastic IP addresses
+
+![](/img/81.png)
+
+¿como nos aseguramos?
+
+![](/img/83.png)
+
+
+
+---
+
+**How can I connect to my Amazon EC2 instance if I lost my SSH key pa...**
+
+https://www.youtube.com/watch?v=5V2hKFj9_SI
+
+
+
+
+
+
+
+
